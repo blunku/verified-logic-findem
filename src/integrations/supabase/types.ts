@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_results: {
+        Row: {
+          audit_status: string
+          candidate_id: string
+          code_quality_score: number | null
+          communication_score: number | null
+          created_at: string
+          gpt_summary: string | null
+          id: string
+          logic_score: number | null
+          overall_score: number | null
+          problem_solving_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          audit_status?: string
+          candidate_id: string
+          code_quality_score?: number | null
+          communication_score?: number | null
+          created_at?: string
+          gpt_summary?: string | null
+          id?: string
+          logic_score?: number | null
+          overall_score?: number | null
+          problem_solving_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          audit_status?: string
+          candidate_id?: string
+          code_quality_score?: number | null
+          communication_score?: number | null
+          created_at?: string
+          gpt_summary?: string | null
+          id?: string
+          logic_score?: number | null
+          overall_score?: number | null
+          problem_solving_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_results_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidates: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          github_url: string | null
+          github_username: string | null
+          id: string
+          location: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          github_url?: string | null
+          github_username?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          github_url?: string | null
+          github_username?: string | null
+          id?: string
+          location?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          plan: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          plan?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          plan?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
