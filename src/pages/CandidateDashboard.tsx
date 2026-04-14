@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/landing/Navbar";
 import { Github, Play, CheckCircle, Clock, Brain, Code2, Bug, Lightbulb, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -20,7 +20,8 @@ const CandidateDashboard = () => {
   const [candidate, setCandidate] = useState<any>(null);
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [startingAudit, setStartingAudit] = useState(false);
+  const [auditRunning, setAuditRunning] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -43,7 +44,12 @@ const CandidateDashboard = () => {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        setAudit(auditData);
+        if (auditData) {
+          setAudit(auditData);
+          if (auditData.audit_status === "pending" || auditData.audit_status === "processing") {
+            setAuditRunning(true);
+          }
+        }
       }
       setLoading(false);
     };
@@ -56,27 +62,36 @@ const CandidateDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Poll for audit status changes
+  // Polling for audit completion
   useEffect(() => {
-    if (!audit || audit.audit_status !== "pending" && audit.audit_status !== "processing") return;
+    if (!auditRunning || !candidate) return;
 
-    const interval = setInterval(async () => {
+    pollingRef.current = setInterval(async () => {
       const { data } = await supabase
         .from("audit_results")
         .select("*")
-        .eq("id", audit.id)
+        .eq("candidate_id", candidate.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
-      if (data) setAudit(data);
-      if (data?.audit_status === "completed") clearInterval(interval);
-    }, 3000);
 
-    return () => clearInterval(interval);
-  }, [audit?.id, audit?.audit_status]);
+      if (data) {
+        setAudit(data);
+        if (data.audit_status === "complete") {
+          setAuditRunning(false);
+          if (pollingRef.current) clearInterval(pollingRef.current);
+        }
+      }
+    }, 5000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [auditRunning, candidate?.id]);
 
   const githubLinked = !!candidate?.github_url;
 
   const handleLinkGithub = async () => {
-    // For now, simulate linking with a placeholder
     const { error } = await supabase
       .from("candidates")
       .update({ github_username: "developer", github_url: "https://github.com/developer" })
@@ -87,19 +102,49 @@ const CandidateDashboard = () => {
   };
 
   const handleStartAudit = async () => {
-    setStartingAudit(true);
-    const { data, error } = await supabase
+    setAuditRunning(true);
+
+    // 1. Fetch fresh candidate data
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { toast.error("Not authenticated"); setAuditRunning(false); return; }
+
+    const { data: cand, error: candErr } = await supabase
+      .from("candidates")
+      .select("id, github_url, github_username")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (candErr || !cand) { toast.error("Could not fetch candidate data"); setAuditRunning(false); return; }
+    if (!cand.github_url) { toast.error("Please link your GitHub first"); setAuditRunning(false); return; }
+
+    // 2. Insert pending audit row
+    const { data: auditRow, error: auditErr } = await supabase
       .from("audit_results")
-      .insert({ candidate_id: candidate.id, audit_status: "pending" })
+      .insert({ candidate_id: cand.id, audit_status: "pending" })
       .select()
       .single();
-    if (error) { toast.error("Failed to start audit"); setStartingAudit(false); return; }
-    setAudit(data);
-    setStartingAudit(false);
+
+    if (auditErr) { toast.error("Failed to create audit"); setAuditRunning(false); return; }
+    setAudit(auditRow);
+
+    // 3. POST to n8n webhook
+    try {
+      await fetch("https://maliksakib.app.n8n.cloud/webhook/start-audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidate_id: cand.id,
+          github_url: cand.github_url,
+          github_username: cand.github_username,
+        }),
+      });
+    } catch {
+      toast.error("Failed to trigger audit webhook");
+      setAuditRunning(false);
+    }
   };
 
-  const auditInProgress = audit && (audit.audit_status === "pending" || audit.audit_status === "processing");
-  const auditCompleted = audit && audit.audit_status === "completed";
+  const auditComplete = audit?.audit_status === "complete";
 
   if (loading) {
     return (
@@ -157,14 +202,15 @@ const CandidateDashboard = () => {
                 </p>
               </div>
               <Button
-                variant="hero"
+                variant={auditComplete ? "secondary" : "hero"}
                 onClick={handleStartAudit}
-                disabled={!githubLinked || auditInProgress || startingAudit}
+                disabled={!githubLinked || auditRunning || auditComplete}
+                className={auditComplete ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30" : ""}
               >
-                {startingAudit ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Starting...</>
-                ) : auditInProgress ? (
-                  <><Clock className="w-4 h-4 animate-pulse" /> Processing...</>
+                {auditRunning ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
+                ) : auditComplete ? (
+                  <><CheckCircle className="w-4 h-4" /> Audit Complete ✓</>
                 ) : (
                   <><Play className="w-4 h-4" /> Start Audit</>
                 )}
@@ -177,34 +223,45 @@ const CandidateDashboard = () => {
               </div>
             )}
 
-            {auditInProgress && (
+            {auditRunning && (
               <div className="rounded-lg bg-muted/30 border border-primary/10 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   <div>
                     <span className="text-sm font-medium">Audit in progress</span>
-                    <p className="text-xs text-muted-foreground">Our AI is analyzing your code patterns and logic. This may take a few minutes.</p>
+                    <p className="text-xs text-muted-foreground">Our AI is analyzing your code patterns and logic. Polling every 5 seconds...</p>
                   </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-primary h-full rounded-full animate-pulse" style={{ width: audit.audit_status === "processing" ? "60%" : "20%" }} />
+                  <div className="bg-primary h-full rounded-full animate-pulse" style={{ width: "50%" }} />
                 </div>
               </div>
             )}
 
-            {auditCompleted && (
+            {auditComplete && (
               <div className="rounded-lg bg-muted/30 border border-primary/10 p-6 font-mono text-sm">
                 <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle className="w-4 h-4 text-success" />
-                  <span className="text-success text-xs font-medium">AUDIT COMPLETE</span>
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  <span className="text-emerald-400 text-xs font-medium">AUDIT COMPLETE</span>
                 </div>
-                {audit.gpt_summary && <p className="text-muted-foreground text-sm font-sans">{audit.gpt_summary}</p>}
+
+                {/* Overall Score - Large & Prominent */}
+                <div className="flex items-center justify-center my-6">
+                  <div className="text-center">
+                    <div className="text-6xl font-bold text-primary">{audit.overall_score ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground mt-1 font-sans">OVERALL SCORE</div>
+                  </div>
+                </div>
+
+                {audit.gpt_summary && (
+                  <p className="text-muted-foreground text-sm font-sans mb-4 border-t border-border pt-4">{audit.gpt_summary}</p>
+                )}
               </div>
             )}
           </div>
 
-          {/* Results */}
-          {auditCompleted && (
+          {/* Score Breakdown */}
+          {auditComplete && (
             <div>
               <h3 className="text-xl font-semibold mb-4">Your Logic Breakdown</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
