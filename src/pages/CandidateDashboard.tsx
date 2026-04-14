@@ -174,30 +174,27 @@ const CandidateDashboard = () => {
             <p className="text-muted-foreground">Link your GitHub and prove your logic with a live AI audit.</p>
           </div>
 
-          {/* GitHub Card */}
+          {/* GitHub Username */}
           <div className="surface-elevated p-6 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
-                  <Github className="w-6 h-6 text-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">GitHub Integration</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {githubLinked ? `Connected as @${candidate.github_username}` : "Connect your GitHub to analyze your codebase"}
-                  </p>
-                </div>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                <Github className="w-6 h-6 text-foreground" />
               </div>
-              <Button
-                variant={githubLinked ? "secondary" : "default"}
-                onClick={handleLinkGithub}
-                disabled={githubLinked}
-              >
-                {githubLinked ? (
-                  <><CheckCircle className="w-4 h-4" /> Connected</>
-                ) : (
-                  <><Github className="w-4 h-4" /> Link GitHub</>
-                )}
+              <div>
+                <h3 className="font-semibold text-lg">GitHub Integration</h3>
+                <p className="text-sm text-muted-foreground">Enter your GitHub username so we can analyze your code.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder="e.g. torvalds"
+                value={githubInput}
+                onChange={(e) => { setGithubInput(e.target.value); setGithubSaved(false); }}
+                disabled={savingGithub}
+                className="max-w-xs"
+              />
+              <Button onClick={handleSaveGithub} disabled={savingGithub || !githubInput.trim()}>
+                {savingGithub ? <Loader2 className="w-4 h-4 animate-spin" /> : githubSaved ? <><CheckCircle className="w-4 h-4 text-emerald-400" /> Saved ✓</> : "Save"}
               </Button>
             </div>
           </div>
@@ -214,7 +211,7 @@ const CandidateDashboard = () => {
               <Button
                 variant={auditComplete ? "secondary" : "hero"}
                 onClick={handleStartAudit}
-                disabled={!githubLinked || auditRunning || auditComplete}
+                disabled={!githubSaved || auditRunning || auditComplete}
                 className={auditComplete ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30" : ""}
               >
                 {auditRunning ? (
@@ -227,9 +224,9 @@ const CandidateDashboard = () => {
               </Button>
             </div>
 
-            {!githubLinked && (
+            {!githubSaved && (
               <div className="rounded-lg bg-muted/50 border border-border p-4 text-center">
-                <p className="text-sm text-muted-foreground">Link your GitHub first to enable the AI Code Audit.</p>
+                <p className="text-sm text-muted-foreground">Save your GitHub username first to enable the AI Code Audit.</p>
               </div>
             )}
 
