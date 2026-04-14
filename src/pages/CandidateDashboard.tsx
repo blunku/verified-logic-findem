@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import Navbar from "@/components/landing/Navbar";
 import { Github, Play, CheckCircle, Clock, Brain, Code2, Bug, Lightbulb, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -21,6 +22,9 @@ const CandidateDashboard = () => {
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [auditRunning, setAuditRunning] = useState(false);
+  const [githubInput, setGithubInput] = useState("");
+  const [savingGithub, setSavingGithub] = useState(false);
+  const [githubSaved, setGithubSaved] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -35,6 +39,9 @@ const CandidateDashboard = () => {
         .maybeSingle();
 
       setCandidate(cand);
+      if (cand?.github_username) {
+        setGithubInput(cand.github_username);
+        setGithubSaved(true);
 
       if (cand) {
         const { data: auditData } = await supabase
@@ -89,16 +96,19 @@ const CandidateDashboard = () => {
     };
   }, [auditRunning, candidate?.id]);
 
-  const githubLinked = !!candidate?.github_url;
-
-  const handleLinkGithub = async () => {
+  const handleSaveGithub = async () => {
+    if (!githubInput.trim()) { toast.error("Please enter a GitHub username"); return; }
+    setSavingGithub(true);
+    const username = githubInput.trim();
     const { error } = await supabase
       .from("candidates")
-      .update({ github_username: "developer", github_url: "https://github.com/developer" })
+      .update({ github_username: username, github_url: `https://github.com/${username}` })
       .eq("id", candidate.id);
-    if (error) { toast.error("Failed to link GitHub"); return; }
-    setCandidate({ ...candidate, github_username: "developer", github_url: "https://github.com/developer" });
-    toast.success("GitHub linked!");
+    setSavingGithub(false);
+    if (error) { toast.error("Failed to save GitHub username"); return; }
+    setCandidate({ ...candidate, github_username: username, github_url: `https://github.com/${username}` });
+    setGithubSaved(true);
+    toast.success("GitHub username saved!");
   };
 
   const handleStartAudit = async () => {
@@ -164,30 +174,27 @@ const CandidateDashboard = () => {
             <p className="text-muted-foreground">Link your GitHub and prove your logic with a live AI audit.</p>
           </div>
 
-          {/* GitHub Card */}
+          {/* GitHub Username */}
           <div className="surface-elevated p-6 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
-                  <Github className="w-6 h-6 text-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">GitHub Integration</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {githubLinked ? `Connected as @${candidate.github_username}` : "Connect your GitHub to analyze your codebase"}
-                  </p>
-                </div>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                <Github className="w-6 h-6 text-foreground" />
               </div>
-              <Button
-                variant={githubLinked ? "secondary" : "default"}
-                onClick={handleLinkGithub}
-                disabled={githubLinked}
-              >
-                {githubLinked ? (
-                  <><CheckCircle className="w-4 h-4" /> Connected</>
-                ) : (
-                  <><Github className="w-4 h-4" /> Link GitHub</>
-                )}
+              <div>
+                <h3 className="font-semibold text-lg">GitHub Integration</h3>
+                <p className="text-sm text-muted-foreground">Enter your GitHub username so we can analyze your code.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder="e.g. torvalds"
+                value={githubInput}
+                onChange={(e) => { setGithubInput(e.target.value); setGithubSaved(false); }}
+                disabled={savingGithub}
+                className="max-w-xs"
+              />
+              <Button onClick={handleSaveGithub} disabled={savingGithub || !githubInput.trim()}>
+                {savingGithub ? <Loader2 className="w-4 h-4 animate-spin" /> : githubSaved ? <><CheckCircle className="w-4 h-4 text-emerald-400" /> Saved ✓</> : "Save"}
               </Button>
             </div>
           </div>
@@ -204,7 +211,7 @@ const CandidateDashboard = () => {
               <Button
                 variant={auditComplete ? "secondary" : "hero"}
                 onClick={handleStartAudit}
-                disabled={!githubLinked || auditRunning || auditComplete}
+                disabled={!githubSaved || auditRunning || auditComplete}
                 className={auditComplete ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30" : ""}
               >
                 {auditRunning ? (
@@ -217,9 +224,9 @@ const CandidateDashboard = () => {
               </Button>
             </div>
 
-            {!githubLinked && (
+            {!githubSaved && (
               <div className="rounded-lg bg-muted/50 border border-border p-4 text-center">
-                <p className="text-sm text-muted-foreground">Link your GitHub first to enable the AI Code Audit.</p>
+                <p className="text-sm text-muted-foreground">Save your GitHub username first to enable the AI Code Audit.</p>
               </div>
             )}
 
