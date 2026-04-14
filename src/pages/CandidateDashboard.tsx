@@ -42,7 +42,8 @@ const CandidateDashboard = () => {
       if (cand?.github_username) {
         setGithubInput(cand.github_username);
         setGithubSaved(true);
-      }
+
+      if (cand) {
         const { data: auditData } = await supabase
           .from("audit_results")
           .select("*")
