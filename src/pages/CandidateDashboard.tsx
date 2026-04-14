@@ -96,16 +96,19 @@ const CandidateDashboard = () => {
     };
   }, [auditRunning, candidate?.id]);
 
-  const githubLinked = !!candidate?.github_url;
-
-  const handleLinkGithub = async () => {
+  const handleSaveGithub = async () => {
+    if (!githubInput.trim()) { toast.error("Please enter a GitHub username"); return; }
+    setSavingGithub(true);
+    const username = githubInput.trim();
     const { error } = await supabase
       .from("candidates")
-      .update({ github_username: "developer", github_url: "https://github.com/developer" })
+      .update({ github_username: username, github_url: `https://github.com/${username}` })
       .eq("id", candidate.id);
-    if (error) { toast.error("Failed to link GitHub"); return; }
-    setCandidate({ ...candidate, github_username: "developer", github_url: "https://github.com/developer" });
-    toast.success("GitHub linked!");
+    setSavingGithub(false);
+    if (error) { toast.error("Failed to save GitHub username"); return; }
+    setCandidate({ ...candidate, github_username: username, github_url: `https://github.com/${username}` });
+    setGithubSaved(true);
+    toast.success("GitHub username saved!");
   };
 
   const handleStartAudit = async () => {
