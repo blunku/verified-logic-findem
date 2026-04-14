@@ -22,6 +22,9 @@ const CandidateDashboard = () => {
   const [audit, setAudit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [auditRunning, setAuditRunning] = useState(false);
+  const [githubInput, setGithubInput] = useState("");
+  const [savingGithub, setSavingGithub] = useState(false);
+  const [githubSaved, setGithubSaved] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
