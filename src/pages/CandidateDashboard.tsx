@@ -52,12 +52,10 @@ const CandidateDashboard = () => {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (auditData) {
+        if (auditData && auditData.audit_status === "complete") {
           setAudit(auditData);
-          if (auditData.audit_status === "pending" || auditData.audit_status === "processing") {
-            setAuditRunning(true);
-          }
         }
+        // Do NOT auto-set auditRunning — only manual click triggers it
       }
       setLoading(false);
     };
