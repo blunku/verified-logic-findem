@@ -52,12 +52,10 @@ const CandidateDashboard = () => {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (auditData) {
+        if (auditData && auditData.audit_status === "complete") {
           setAudit(auditData);
-          if (auditData.audit_status === "pending" || auditData.audit_status === "processing") {
-            setAuditRunning(true);
-          }
         }
+        // Do NOT auto-set auditRunning — only manual click triggers it
       }
       setLoading(false);
     };
@@ -109,6 +107,8 @@ const CandidateDashboard = () => {
     if (error) { toast.error("Failed to save GitHub username"); return; }
     setCandidate({ ...candidate, github_username: username, github_url: `https://github.com/${username}` });
     setGithubSaved(true);
+    setAudit(null);
+    setAuditRunning(false);
     toast.success("GitHub username saved!");
   };
 
