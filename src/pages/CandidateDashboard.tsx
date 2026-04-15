@@ -107,6 +107,8 @@ const CandidateDashboard = () => {
     if (error) { toast.error("Failed to save GitHub username"); return; }
     setCandidate({ ...candidate, github_username: username, github_url: `https://github.com/${username}` });
     setGithubSaved(true);
+    setAudit(null);
+    setAuditRunning(false);
     toast.success("GitHub username saved!");
   };
 
