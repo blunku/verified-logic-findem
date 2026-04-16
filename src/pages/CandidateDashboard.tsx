@@ -70,25 +70,39 @@ const CandidateDashboard = () => {
 
   // Polling for audit completion
   useEffect(() => {
-    if (!auditRunning || !candidate) return;
+    if (!auditRunning || !candidate?.id) return;
 
-    pollingRef.current = setInterval(async () => {
-      const { data } = await supabase
-        .from("audit_results")
-        .select("*")
-        .eq("candidate_id", candidate.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const candidateId = candidate.id;
 
-      if (data) {
-        setAudit(data);
-        if (data.audit_status === "complete") {
+    // Poll immediately once, then every 5 seconds
+    const pollAudit = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("audit_results")
+          .select("*")
+          .eq("candidate_id", candidateId)
+          .eq("audit_status", "complete")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Polling error:", error);
+          return;
+        }
+
+        if (data && data.audit_status === "complete") {
+          setAudit(data);
           setAuditRunning(false);
           if (pollingRef.current) clearInterval(pollingRef.current);
         }
+      } catch (err) {
+        console.error("Polling exception:", err);
       }
-    }, 5000);
+    };
+
+    pollAudit(); // immediate first check
+    pollingRef.current = setInterval(pollAudit, 5000);
 
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
