@@ -48,14 +48,13 @@ const CandidateDashboard = () => {
         const { data: auditData } = await supabase
           .from("audit_results")
           .select("*")
-          .eq("candidate_id", cand.id)
+          .eq("audit_status", "complete")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (auditData && auditData.audit_status === "complete") {
+        if (auditData) {
           setAudit(auditData);
         }
-        // Do NOT auto-set auditRunning — only manual click triggers it
       }
       setLoading(false);
     };
