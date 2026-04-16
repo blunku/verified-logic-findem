@@ -81,7 +81,6 @@ const CandidateDashboard = () => {
           .from("audit_results")
           .select("*")
           .eq("candidate_id", candidateId)
-          .eq("audit_status", "complete")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -91,10 +90,13 @@ const CandidateDashboard = () => {
           return;
         }
 
-        if (data && data.audit_status === "complete") {
-          setAudit(data);
-          setAuditRunning(false);
-          if (pollingRef.current) clearInterval(pollingRef.current);
+        if (data) {
+          console.log("Poll result:", data.audit_status, data.overall_score);
+          if (data.audit_status === "complete") {
+            setAudit(data);
+            setAuditRunning(false);
+            if (pollingRef.current) clearInterval(pollingRef.current);
+          }
         }
       } catch (err) {
         console.error("Polling exception:", err);
