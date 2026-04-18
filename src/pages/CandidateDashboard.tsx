@@ -44,17 +44,16 @@ const CandidateDashboard = () => {
         setGithubSaved(true);
       }
 
-      if (cand) {
-        const { data: auditData } = await supabase
-          .from("audit_results")
-          .select("*")
-          .eq("audit_status", "complete")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (auditData) {
-          setAudit(auditData);
-        }
+      const { data: auditData } = await supabase
+        .from("audit_results")
+        .select("*")
+        .eq("candidate_id", "f47dbbd9-fe9a-49eb-8f89-a83badba7831")
+        .eq("audit_status", "complete")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (auditData) {
+        setAudit(auditData);
       }
       setLoading(false);
     };
@@ -128,6 +127,7 @@ const CandidateDashboard = () => {
   };
 
   const handleStartAudit = async () => {
+    setAudit(null);
     setAuditRunning(true);
 
     // 1. Fetch fresh candidate data
@@ -225,15 +225,14 @@ const CandidateDashboard = () => {
                 </p>
               </div>
               <Button
-                variant={auditComplete ? "secondary" : "hero"}
+                variant="hero"
                 onClick={handleStartAudit}
-                disabled={!githubSaved || auditRunning || auditComplete}
-                className={auditComplete ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30" : ""}
+                disabled={!githubSaved || auditRunning}
               >
                 {auditRunning ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
                 ) : auditComplete ? (
-                  <><CheckCircle className="w-4 h-4" /> Audit Complete ✓</>
+                  <><Play className="w-4 h-4" /> Re-run Audit</>
                 ) : (
                   <><Play className="w-4 h-4" /> Start Audit</>
                 )}
