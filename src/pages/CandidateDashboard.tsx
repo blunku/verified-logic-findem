@@ -36,26 +36,35 @@ const CandidateDashboard = () => {
 
   const fetchLatestCompleteAudit = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("audit_results")
-        .select("*")
-        .eq("audit_status", "complete")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const res = await fetch("https://maliksakib.app.n8n.cloud/webhook/get-audit-results", {
+        method: "GET",
+      });
 
-      if (error) {
-        console.error("Audit fetch error:", error);
+      if (!res.ok) {
+        console.error("Audit webhook error:", res.status);
         return null;
       }
 
-      if (data) {
-        setAudit(data);
+      const raw = await res.json();
+      // Handle either an object or an array response
+      const data = Array.isArray(raw) ? raw[0] : raw;
+
+      const hasScores =
+        data &&
+        (data.overall_score !== undefined ||
+          data.logic_score !== undefined ||
+          data.problem_solving_score !== undefined ||
+          data.code_quality_score !== undefined ||
+          data.communication_score !== undefined);
+
+      if (hasScores) {
+        setAudit({ ...data, audit_status: "complete" });
         setAuditRunning(false);
         stopPolling();
+        return data;
       }
 
-      return data;
+      return null;
     } catch (error) {
       console.error("Audit fetch exception:", error);
       return null;
