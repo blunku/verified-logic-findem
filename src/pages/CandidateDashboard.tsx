@@ -222,9 +222,10 @@ const CandidateDashboard = () => {
                 </p>
               </div>
               <Button
-                variant="hero"
+                variant={auditComplete && !auditRunning ? "default" : "hero"}
                 onClick={handleStartAudit}
                 disabled={!githubSaved || auditRunning}
+                className={auditComplete && !auditRunning ? "bg-success text-success-foreground hover:bg-success/90 shadow-[0_0_24px_hsl(var(--success)/0.25)]" : undefined}
               >
                 {auditRunning ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
