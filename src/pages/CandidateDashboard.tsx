@@ -3,8 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/landing/Navbar";
-import { Github, Play, CheckCircle, Clock, Brain, Code2, Bug, Lightbulb, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { Github, Play, CheckCircle, Brain, Code2, Bug, Lightbulb, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -27,6 +27,48 @@ const CandidateDashboard = () => {
   const [githubSaved, setGithubSaved] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  const fetchLatestCompleteAudit = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("audit_results")
+        .select("*")
+        .eq("audit_status", "complete")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Audit fetch error:", error);
+        return null;
+      }
+
+      if (data) {
+        setAudit(data);
+        setAuditRunning(false);
+        stopPolling();
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Audit fetch exception:", error);
+      return null;
+    }
+  }, [stopPolling]);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    pollingRef.current = setInterval(() => {
+      void fetchLatestCompleteAudit();
+    }, 3000);
+  }, [fetchLatestCompleteAudit, stopPolling]);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -44,16 +86,9 @@ const CandidateDashboard = () => {
         setGithubSaved(true);
       }
 
-      const { data: auditData } = await supabase
-        .from("audit_results")
-        .select("*")
-        .eq("candidate_id", "f47dbbd9-fe9a-49eb-8f89-a83badba7831")
-        .eq("audit_status", "complete")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (auditData) {
-        setAudit(auditData);
+      const latestAudit = await fetchLatestCompleteAudit();
+      if (!latestAudit) {
+        startPolling();
       }
       setLoading(false);
     };
@@ -63,51 +98,11 @@ const CandidateDashboard = () => {
     });
 
     init();
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  // Polling for audit completion
-  useEffect(() => {
-    if (!auditRunning || !candidate?.id) return;
-
-    const candidateId = candidate.id;
-
-    // Poll immediately once, then every 5 seconds
-    const pollAudit = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("audit_results")
-          .select("*")
-          .eq("candidate_id", candidateId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Polling error:", error);
-          return;
-        }
-
-        if (data) {
-          console.log("Poll result:", data.audit_status, data.overall_score);
-          if (data.audit_status === "complete") {
-            setAudit(data);
-            setAuditRunning(false);
-            if (pollingRef.current) clearInterval(pollingRef.current);
-          }
-        }
-      } catch (err) {
-        console.error("Polling exception:", err);
-      }
-    };
-
-    pollAudit(); // immediate first check
-    pollingRef.current = setInterval(pollAudit, 5000);
-
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      stopPolling();
+      subscription.unsubscribe();
     };
-  }, [auditRunning, candidate?.id]);
+  }, [fetchLatestCompleteAudit, navigate, startPolling, stopPolling]);
 
   const handleSaveGithub = async () => {
     if (!githubInput.trim()) { toast.error("Please enter a GitHub username"); return; }
@@ -129,10 +124,11 @@ const CandidateDashboard = () => {
   const handleStartAudit = async () => {
     setAudit(null);
     setAuditRunning(true);
+    startPolling();
 
     // 1. Fetch fresh candidate data
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("Not authenticated"); setAuditRunning(false); return; }
+    if (!session) { toast.error("Not authenticated"); setAuditRunning(false); stopPolling(); return; }
 
     const { data: cand, error: candErr } = await supabase
       .from("candidates")
@@ -140,8 +136,8 @@ const CandidateDashboard = () => {
       .eq("user_id", session.user.id)
       .maybeSingle();
 
-    if (candErr || !cand) { toast.error("Could not fetch candidate data"); setAuditRunning(false); return; }
-    if (!cand.github_url) { toast.error("Please link your GitHub first"); setAuditRunning(false); return; }
+    if (candErr || !cand) { toast.error("Could not fetch candidate data"); setAuditRunning(false); stopPolling(); return; }
+    if (!cand.github_url) { toast.error("Please link your GitHub first"); setAuditRunning(false); stopPolling(); return; }
 
     // 2. Insert pending audit row
     const { data: auditRow, error: auditErr } = await supabase
@@ -150,7 +146,7 @@ const CandidateDashboard = () => {
       .select()
       .single();
 
-    if (auditErr) { toast.error("Failed to create audit"); setAuditRunning(false); return; }
+    if (auditErr) { toast.error("Failed to create audit"); setAuditRunning(false); stopPolling(); return; }
     setAudit(auditRow);
 
     // 3. POST to n8n webhook
@@ -167,6 +163,7 @@ const CandidateDashboard = () => {
     } catch {
       toast.error("Failed to trigger audit webhook");
       setAuditRunning(false);
+      stopPolling();
     }
   };
 
@@ -225,14 +222,15 @@ const CandidateDashboard = () => {
                 </p>
               </div>
               <Button
-                variant="hero"
+                variant={auditComplete && !auditRunning ? "default" : "hero"}
                 onClick={handleStartAudit}
                 disabled={!githubSaved || auditRunning}
+                className={auditComplete && !auditRunning ? "bg-success text-success-foreground hover:bg-success/90 shadow-[0_0_24px_hsl(var(--success)/0.25)]" : undefined}
               >
                 {auditRunning ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
                 ) : auditComplete ? (
-                  <><Play className="w-4 h-4" /> Re-run Audit</>
+                  <><CheckCircle className="w-4 h-4" /> Audit Complete ✓</>
                 ) : (
                   <><Play className="w-4 h-4" /> Start Audit</>
                 )}
@@ -251,7 +249,7 @@ const CandidateDashboard = () => {
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   <div>
                     <span className="text-sm font-medium">Audit in progress</span>
-                    <p className="text-xs text-muted-foreground">Our AI is analyzing your code patterns and logic. Polling every 5 seconds...</p>
+                    <p className="text-xs text-muted-foreground">Our AI is analyzing your code patterns and logic. Polling every 3 seconds...</p>
                   </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
@@ -261,51 +259,53 @@ const CandidateDashboard = () => {
             )}
 
             {auditComplete && (
-              <div className="rounded-lg bg-muted/30 border border-primary/10 p-6 font-mono text-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400 text-xs font-medium">AUDIT COMPLETE</span>
-                </div>
-
-                {/* Overall Score - Large & Prominent */}
-                <div className="flex items-center justify-center my-6">
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-primary">{audit.overall_score ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground mt-1 font-sans">OVERALL SCORE</div>
+              <div className="rounded-2xl border border-success/30 bg-card p-6 shadow-[0_0_30px_hsl(var(--success)/0.12)]">
+                <div className="mb-6 flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">
+                      <CheckCircle className="h-4 w-4" />
+                      AUDIT COMPLETE
+                    </div>
+                    <h3 className="text-2xl font-semibold">Latest AI Scorecard</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">Your latest completed audit is now ready.</p>
+                  </div>
+                  <div className="rounded-2xl border border-success/20 bg-success/10 px-6 py-4 text-center md:min-w-56">
+                    <div className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">Overall Score</div>
+                    <div className="mt-2 text-6xl font-bold leading-none text-success">{audit.overall_score ?? "—"}</div>
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {auditCategoryMeta.map((cat) => {
+                    const score = audit[cat.key] ?? 0;
+
+                    return (
+                      <div key={cat.name} className="rounded-xl border border-border bg-muted/30 p-4">
+                        <div className="mb-3 flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
+                            <cat.icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{cat.name}</p>
+                            <p className="text-xs text-muted-foreground">{cat.description}</p>
+                          </div>
+                        </div>
+                        <div className="mb-2 flex items-end justify-between gap-4">
+                          <span className="text-3xl font-bold leading-none">{score}</span>
+                          <Badge variant="secondary" className="font-mono text-xs">/100</Badge>
+                        </div>
+                        <Progress value={score} className="h-1.5" />
+                      </div>
+                    );
+                  })}
+                </div>
+
                 {audit.gpt_summary && (
-                  <p className="text-muted-foreground text-sm font-sans mb-4 border-t border-border pt-4">{audit.gpt_summary}</p>
+                  <p className="mt-6 border-t border-border pt-6 text-sm leading-7 text-muted-foreground">{audit.gpt_summary}</p>
                 )}
               </div>
             )}
           </div>
-
-          {/* Score Breakdown */}
-          {auditComplete && (
-            <div>
-              <h3 className="text-xl font-semibold mb-4">Your Logic Breakdown</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {auditCategoryMeta.map((cat) => {
-                  const score = audit[cat.key] ?? 0;
-                  return (
-                    <div key={cat.name} className="surface-card p-5 hover:border-primary/20 transition-colors">
-                      <div className="flex items-center gap-3 mb-3">
-                        <cat.icon className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-sm">{cat.name}</span>
-                        <Badge variant="secondary" className="ml-auto font-mono text-xs">
-                          {score}/100
-                        </Badge>
-                      </div>
-                      <Progress value={score} className="h-1.5 mb-2" />
-                      <p className="text-xs text-muted-foreground">{cat.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>
