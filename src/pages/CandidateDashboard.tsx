@@ -86,8 +86,10 @@ const CandidateDashboard = () => {
         setGithubSaved(true);
       }
 
-      await fetchLatestCompleteAudit();
-      startPolling();
+      const latestAudit = await fetchLatestCompleteAudit();
+      if (!latestAudit) {
+        startPolling();
+      }
       setLoading(false);
     };
 
@@ -227,7 +229,7 @@ const CandidateDashboard = () => {
                 {auditRunning ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
                 ) : auditComplete ? (
-                  <><Play className="w-4 h-4" /> Re-run Audit</>
+                  <><CheckCircle className="w-4 h-4" /> Audit Complete ✓</>
                 ) : (
                   <><Play className="w-4 h-4" /> Start Audit</>
                 )}
@@ -246,7 +248,7 @@ const CandidateDashboard = () => {
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   <div>
                     <span className="text-sm font-medium">Audit in progress</span>
-                    <p className="text-xs text-muted-foreground">Our AI is analyzing your code patterns and logic. Polling every 5 seconds...</p>
+                    <p className="text-xs text-muted-foreground">Our AI is analyzing your code patterns and logic. Polling every 3 seconds...</p>
                   </div>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
@@ -256,51 +258,53 @@ const CandidateDashboard = () => {
             )}
 
             {auditComplete && (
-              <div className="rounded-lg bg-muted/30 border border-primary/10 p-6 font-mono text-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400 text-xs font-medium">AUDIT COMPLETE</span>
-                </div>
-
-                {/* Overall Score - Large & Prominent */}
-                <div className="flex items-center justify-center my-6">
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-primary">{audit.overall_score ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground mt-1 font-sans">OVERALL SCORE</div>
+              <div className="rounded-2xl border border-success/30 bg-card p-6 shadow-[0_0_30px_hsl(var(--success)/0.12)]">
+                <div className="mb-6 flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">
+                      <CheckCircle className="h-4 w-4" />
+                      AUDIT COMPLETE
+                    </div>
+                    <h3 className="text-2xl font-semibold">Latest AI Scorecard</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">Your latest completed audit is now ready.</p>
+                  </div>
+                  <div className="rounded-2xl border border-success/20 bg-success/10 px-6 py-4 text-center md:min-w-56">
+                    <div className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">Overall Score</div>
+                    <div className="mt-2 text-6xl font-bold leading-none text-success">{audit.overall_score ?? "—"}</div>
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {auditCategoryMeta.map((cat) => {
+                    const score = audit[cat.key] ?? 0;
+
+                    return (
+                      <div key={cat.name} className="rounded-xl border border-border bg-muted/30 p-4">
+                        <div className="mb-3 flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
+                            <cat.icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{cat.name}</p>
+                            <p className="text-xs text-muted-foreground">{cat.description}</p>
+                          </div>
+                        </div>
+                        <div className="mb-2 flex items-end justify-between gap-4">
+                          <span className="text-3xl font-bold leading-none">{score}</span>
+                          <Badge variant="secondary" className="font-mono text-xs">/100</Badge>
+                        </div>
+                        <Progress value={score} className="h-1.5" />
+                      </div>
+                    );
+                  })}
+                </div>
+
                 {audit.gpt_summary && (
-                  <p className="text-muted-foreground text-sm font-sans mb-4 border-t border-border pt-4">{audit.gpt_summary}</p>
+                  <p className="mt-6 border-t border-border pt-6 text-sm leading-7 text-muted-foreground">{audit.gpt_summary}</p>
                 )}
               </div>
             )}
           </div>
-
-          {/* Score Breakdown */}
-          {auditComplete && (
-            <div>
-              <h3 className="text-xl font-semibold mb-4">Your Logic Breakdown</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {auditCategoryMeta.map((cat) => {
-                  const score = audit[cat.key] ?? 0;
-                  return (
-                    <div key={cat.name} className="surface-card p-5 hover:border-primary/20 transition-colors">
-                      <div className="flex items-center gap-3 mb-3">
-                        <cat.icon className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-sm">{cat.name}</span>
-                        <Badge variant="secondary" className="ml-auto font-mono text-xs">
-                          {score}/100
-                        </Badge>
-                      </div>
-                      <Progress value={score} className="h-1.5 mb-2" />
-                      <p className="text-xs text-muted-foreground">{cat.description}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </main>
     </div>
