@@ -127,6 +127,7 @@ const CandidateDashboard = () => {
   };
 
   const handleStartAudit = async () => {
+    setAudit(null);
     setAuditRunning(true);
 
     // 1. Fetch fresh candidate data
@@ -224,15 +225,14 @@ const CandidateDashboard = () => {
                 </p>
               </div>
               <Button
-                variant={auditComplete ? "secondary" : "hero"}
+                variant="hero"
                 onClick={handleStartAudit}
-                disabled={!githubSaved || auditRunning || auditComplete}
-                className={auditComplete ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30" : ""}
+                disabled={!githubSaved || auditRunning}
               >
                 {auditRunning ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
                 ) : auditComplete ? (
-                  <><CheckCircle className="w-4 h-4" /> Audit Complete ✓</>
+                  <><Play className="w-4 h-4" /> Re-run Audit</>
                 ) : (
                   <><Play className="w-4 h-4" /> Start Audit</>
                 )}
