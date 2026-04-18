@@ -3,8 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/landing/Navbar";
-import { Github, Play, CheckCircle, Clock, Brain, Code2, Bug, Lightbulb, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { Github, Play, CheckCircle, Brain, Code2, Bug, Lightbulb, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -27,6 +27,48 @@ const CandidateDashboard = () => {
   const [githubSaved, setGithubSaved] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  const fetchLatestCompleteAudit = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("audit_results")
+        .select("*")
+        .eq("audit_status", "complete")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Audit fetch error:", error);
+        return null;
+      }
+
+      if (data) {
+        setAudit(data);
+        setAuditRunning(false);
+        stopPolling();
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Audit fetch exception:", error);
+      return null;
+    }
+  }, [stopPolling]);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    pollingRef.current = setInterval(() => {
+      void fetchLatestCompleteAudit();
+    }, 3000);
+  }, [fetchLatestCompleteAudit, stopPolling]);
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -44,17 +86,8 @@ const CandidateDashboard = () => {
         setGithubSaved(true);
       }
 
-      const { data: auditData } = await supabase
-        .from("audit_results")
-        .select("*")
-        .eq("candidate_id", "f47dbbd9-fe9a-49eb-8f89-a83badba7831")
-        .eq("audit_status", "complete")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (auditData) {
-        setAudit(auditData);
-      }
+      await fetchLatestCompleteAudit();
+      startPolling();
       setLoading(false);
     };
 
@@ -63,51 +96,11 @@ const CandidateDashboard = () => {
     });
 
     init();
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  // Polling for audit completion
-  useEffect(() => {
-    if (!auditRunning || !candidate?.id) return;
-
-    const candidateId = candidate.id;
-
-    // Poll immediately once, then every 5 seconds
-    const pollAudit = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("audit_results")
-          .select("*")
-          .eq("candidate_id", candidateId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Polling error:", error);
-          return;
-        }
-
-        if (data) {
-          console.log("Poll result:", data.audit_status, data.overall_score);
-          if (data.audit_status === "complete") {
-            setAudit(data);
-            setAuditRunning(false);
-            if (pollingRef.current) clearInterval(pollingRef.current);
-          }
-        }
-      } catch (err) {
-        console.error("Polling exception:", err);
-      }
-    };
-
-    pollAudit(); // immediate first check
-    pollingRef.current = setInterval(pollAudit, 5000);
-
     return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
+      stopPolling();
+      subscription.unsubscribe();
     };
-  }, [auditRunning, candidate?.id]);
+  }, [fetchLatestCompleteAudit, navigate, startPolling, stopPolling]);
 
   const handleSaveGithub = async () => {
     if (!githubInput.trim()) { toast.error("Please enter a GitHub username"); return; }
@@ -129,10 +122,11 @@ const CandidateDashboard = () => {
   const handleStartAudit = async () => {
     setAudit(null);
     setAuditRunning(true);
+    startPolling();
 
     // 1. Fetch fresh candidate data
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("Not authenticated"); setAuditRunning(false); return; }
+    if (!session) { toast.error("Not authenticated"); setAuditRunning(false); stopPolling(); return; }
 
     const { data: cand, error: candErr } = await supabase
       .from("candidates")
@@ -140,8 +134,8 @@ const CandidateDashboard = () => {
       .eq("user_id", session.user.id)
       .maybeSingle();
 
-    if (candErr || !cand) { toast.error("Could not fetch candidate data"); setAuditRunning(false); return; }
-    if (!cand.github_url) { toast.error("Please link your GitHub first"); setAuditRunning(false); return; }
+    if (candErr || !cand) { toast.error("Could not fetch candidate data"); setAuditRunning(false); stopPolling(); return; }
+    if (!cand.github_url) { toast.error("Please link your GitHub first"); setAuditRunning(false); stopPolling(); return; }
 
     // 2. Insert pending audit row
     const { data: auditRow, error: auditErr } = await supabase
@@ -150,7 +144,7 @@ const CandidateDashboard = () => {
       .select()
       .single();
 
-    if (auditErr) { toast.error("Failed to create audit"); setAuditRunning(false); return; }
+    if (auditErr) { toast.error("Failed to create audit"); setAuditRunning(false); stopPolling(); return; }
     setAudit(auditRow);
 
     // 3. POST to n8n webhook
@@ -167,6 +161,7 @@ const CandidateDashboard = () => {
     } catch {
       toast.error("Failed to trigger audit webhook");
       setAuditRunning(false);
+      stopPolling();
     }
   };
 
