@@ -44,17 +44,16 @@ const CandidateDashboard = () => {
         setGithubSaved(true);
       }
 
-      if (cand) {
-        const { data: auditData } = await supabase
-          .from("audit_results")
-          .select("*")
-          .eq("audit_status", "complete")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (auditData) {
-          setAudit(auditData);
-        }
+      const { data: auditData } = await supabase
+        .from("audit_results")
+        .select("*")
+        .eq("candidate_id", "f47dbbd9-fe9a-49eb-8f89-a83badba7831")
+        .eq("audit_status", "complete")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (auditData) {
+        setAudit(auditData);
       }
       setLoading(false);
     };
