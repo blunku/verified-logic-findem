@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import Navbar from "@/components/landing/Navbar";
 import {
   Brain,
   Code2,
@@ -13,6 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 
 const WEBHOOK_URL = "https://maliksakib.app.n8n.cloud/webhook/get-audit-results";
