@@ -31,13 +31,13 @@ const HeroSection = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: '0.3s' }}>
           <Button variant="hero" size="lg" asChild>
-            <Link to="/candidate">
+            <Link to="/auth?role=candidate">
               I'm a Developer
               <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>
           <Button variant="hero-outline" size="lg" asChild>
-            <Link to="/company">
+            <Link to="/auth?role=company">
               I'm Hiring
             </Link>
           </Button>
