@@ -3,10 +3,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/landing/Navbar";
-import { Github, Play, CheckCircle, Brain, Code2, Bug, Lightbulb, Loader2 } from "lucide-react";
+import { Github, Play, CheckCircle, Brain, Code2, Bug, Lightbulb, Loader2, ArrowRight, RotateCcw } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const auditCategoryMeta = [
@@ -312,6 +312,25 @@ const CandidateDashboard = () => {
                 {audit.gpt_summary && (
                   <p className="mt-6 border-t border-border pt-6 text-sm leading-7 text-muted-foreground">{audit.gpt_summary}</p>
                 )}
+
+                <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+                  <Button asChild variant="default" className="bg-success text-success-foreground hover:bg-success/90">
+                    <Link to="/report">
+                      View Full Report <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setAudit(null);
+                      setAuditRunning(false);
+                      stopPolling();
+                      toast.success("Audit reset. Click Start Audit to run again.");
+                    }}
+                  >
+                    <RotateCcw className="h-4 w-4" /> Re-run Audit
+                  </Button>
+                </div>
               </div>
             )}
           </div>
