@@ -1,19 +1,34 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Mail, Lock, Loader2, Code2, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialRole = (searchParams.get("role") === "company" ? "company" : "candidate") as
+    | "candidate"
+    | "company";
+  const [role, setRole] = useState<"candidate" | "company">(initialRole);
+  const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    params.set("role", role);
+    setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
+
+  const destination = role === "company" ? "/company" : "/candidate";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +40,17 @@ const Auth = () => {
           email,
           password,
           options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
+            data: { full_name: fullName, role },
+            emailRedirectTo: `${window.location.origin}${destination}`,
           },
         });
         if (error) throw error;
         toast.success("Check your email to confirm your account.");
+        navigate(destination);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/candidate");
+        navigate(destination);
       }
     } catch (error: any) {
       toast.error(error.message);
