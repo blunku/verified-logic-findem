@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import Navbar from "@/components/landing/Navbar";
 import {
   Brain,
   Code2,
@@ -13,6 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 
 const WEBHOOK_URL = "https://maliksakib.app.n8n.cloud/webhook/get-audit-results";
@@ -131,13 +134,24 @@ const Report = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(220_18%_5%)] text-foreground">
+      <div className="print:hidden">
+        <Navbar />
+      </div>
       {/* Subtle backdrop glow */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute -top-40 left-1/2 h-[480px] w-[820px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[140px]" />
         <div className="absolute bottom-0 right-0 h-[360px] w-[520px] rounded-full bg-blue-500/10 blur-[140px]" />
       </div>
 
-      <div className="mx-auto max-w-5xl px-6 py-12 print:py-6">
+      <div className="mx-auto max-w-5xl px-6 pt-20 pb-12 print:pt-6 print:py-6">
+        <div className="mb-6 print:hidden">
+          <Button variant="ghost" size="sm" asChild className="-ml-3 text-muted-foreground hover:text-foreground">
+            <Link to="/candidate">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </Button>
+        </div>
         {/* Header */}
         <header className="flex flex-col gap-4 border-b border-white/10 pb-8 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">

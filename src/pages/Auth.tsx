@@ -1,19 +1,34 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Mail, Lock, Loader2, Code2, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialRole = (searchParams.get("role") === "company" ? "company" : "candidate") as
+    | "candidate"
+    | "company";
+  const [role, setRole] = useState<"candidate" | "company">(initialRole);
+  const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    params.set("role", role);
+    setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
+
+  const destination = role === "company" ? "/company" : "/candidate";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +40,17 @@ const Auth = () => {
           email,
           password,
           options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
+            data: { full_name: fullName, role },
+            emailRedirectTo: `${window.location.origin}${destination}`,
           },
         });
         if (error) throw error;
         toast.success("Check your email to confirm your account.");
+        navigate(destination);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/candidate");
+        navigate(destination);
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -57,10 +73,39 @@ const Auth = () => {
 
         <form onSubmit={handleSubmit} className="surface-elevated p-6">
           <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-muted/30 p-1">
+              <button
+                type="button"
+                onClick={() => setRole("candidate")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-all",
+                  role === "candidate"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                Developer
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("company")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-all",
+                  role === "company"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                Company
+              </button>
+            </div>
+
             {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                <Label htmlFor="name">{role === "company" ? "Company Name" : "Full Name"}</Label>
+                <Input id="name" placeholder={role === "company" ? "Acme Inc." : "Your name"} value={fullName} onChange={(e) => setFullName(e.target.value)} required />
               </div>
             )}
             <div className="space-y-2">

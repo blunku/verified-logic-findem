@@ -1,5 +1,6 @@
 import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 type Tier = {
@@ -151,8 +152,9 @@ const PricingSection = () => {
               <Button
                 variant={tier.popular ? "hero" : "hero-outline"}
                 className="w-full"
+                asChild
               >
-                {tier.cta}
+                <Link to="/auth?role=company">{tier.cta}</Link>
               </Button>
             </div>
           ))}

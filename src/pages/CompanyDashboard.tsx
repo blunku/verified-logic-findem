@@ -5,6 +5,7 @@ import Navbar from "@/components/landing/Navbar";
 import { Brain, Code2, Lightbulb, Search, Loader2, MapPin, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 interface VerifiedExpert {
@@ -155,8 +156,8 @@ const CompanyDashboard = () => {
                         <div className="text-2xl font-bold font-mono">{expert.audit?.overall_score ?? "—"}</div>
                         <div className="text-[10px] uppercase tracking-wider opacity-80">Overall</div>
                       </div>
-                      <Button size="sm" variant="outline" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        View Profile
+                      <Button size="sm" variant="outline" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link to="/report">View Profile</Link>
                       </Button>
                     </div>
                   </div>
