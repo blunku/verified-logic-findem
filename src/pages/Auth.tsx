@@ -73,10 +73,39 @@ const Auth = () => {
 
         <form onSubmit={handleSubmit} className="surface-elevated p-6">
           <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-muted/30 p-1">
+              <button
+                type="button"
+                onClick={() => setRole("candidate")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-all",
+                  role === "candidate"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                Developer
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("company")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-all",
+                  role === "company"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                Company
+              </button>
+            </div>
+
             {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                <Label htmlFor="name">{role === "company" ? "Company Name" : "Full Name"}</Label>
+                <Input id="name" placeholder={role === "company" ? "Acme Inc." : "Your name"} value={fullName} onChange={(e) => setFullName(e.target.value)} required />
               </div>
             )}
             <div className="space-y-2">
