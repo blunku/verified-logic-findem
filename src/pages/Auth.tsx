@@ -29,6 +29,8 @@ const Auth = () => {
   }, [role]);
 
   const destination = role === "company" ? "/company" : "/candidate";
+  // New candidates go through onboarding; companies skip straight to their dashboard
+  const signupDestination = role === "company" ? "/company" : "/onboarding";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,12 +43,12 @@ const Auth = () => {
           password,
           options: {
             data: { full_name: fullName, role },
-            emailRedirectTo: `${window.location.origin}${destination}`,
+            emailRedirectTo: `${window.location.origin}${signupDestination}`,
           },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account.");
-        navigate(destination);
+        toast.success("Account created! Let's get you set up.");
+        navigate(signupDestination);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
