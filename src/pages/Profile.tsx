@@ -486,19 +486,101 @@ const Profile = () => {
           </TabsContent>
 
           {/* SETTINGS TAB */}
-          <TabsContent value="settings" className="mt-6">
+          <TabsContent value="settings" className="mt-6 space-y-6">
+            {/* Account info */}
             <Card className="surface-card">
               <CardContent className="p-6 space-y-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Email</Label>
-                  <p className="text-sm text-foreground mt-1">{candidate.email ?? "—"}</p>
+                <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  Account
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Current email</Label>
+                    <p className="text-sm text-foreground mt-1 font-mono">{candidate.email ?? "—"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account status</Label>
+                    <p className="text-sm text-foreground mt-1 capitalize">{candidate.status}</p>
+                  </div>
                 </div>
-                <Separator />
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account status</Label>
-                  <p className="text-sm text-foreground mt-1 capitalize">{candidate.status}</p>
+              </CardContent>
+            </Card>
+
+            {/* Change email */}
+            <Card className="surface-card">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                    Change email
+                  </h2>
                 </div>
-                <Separator />
+                <p className="text-xs text-muted-foreground">
+                  We'll send a confirmation link to your new address before the change takes effect.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="new@email.com"
+                    maxLength={255}
+                  />
+                  <Button onClick={handleEmailUpdate} disabled={emailUpdating} variant="outline">
+                    {emailUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Update email
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Change password */}
+            <Card className="surface-card">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                    Change password
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="New password">
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      maxLength={72}
+                    />
+                  </Field>
+                  <Field label="Confirm new password">
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      maxLength={72}
+                    />
+                  </Field>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handlePasswordUpdate} disabled={passwordUpdating} variant="outline">
+                    {passwordUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                    Update password
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sign out */}
+            <Card className="surface-card">
+              <CardContent className="p-6 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Sign out of this device</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You'll need to sign in again to access your dashboard.
+                  </p>
+                </div>
                 <Button
                   variant="outline"
                   onClick={async () => {
@@ -506,8 +588,55 @@ const Profile = () => {
                     navigate("/");
                   }}
                 >
+                  <LogOut className="h-4 w-4" />
                   Sign out
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Danger zone */}
+            <Card className="border-destructive/40 bg-destructive/5">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <h2 className="text-sm font-semibold text-destructive uppercase tracking-wide">
+                    Danger zone
+                  </h2>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Delete account</p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                      Permanently delete your account, profile, audits, and all associated data. This action cannot be undone.
+                    </p>
+                  </div>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" disabled={deleting}>
+                        {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        Delete account
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently remove your profile, audits, applications, and login. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAccount}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Yes, delete forever
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
