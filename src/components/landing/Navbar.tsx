@@ -6,6 +6,7 @@ import { ShieldCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { to: "/jobs", label: "Jobs" },
   { to: "/candidate", label: "Candidates" },
   { to: "/company", label: "Companies" },
 ];
