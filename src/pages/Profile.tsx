@@ -186,6 +186,60 @@ const Profile = () => {
     toast({ title: "Profile saved", description: "Your changes have been updated." });
   };
 
+  const handleEmailUpdate = async () => {
+    const email = newEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "Invalid email", description: "Enter a valid email address.", variant: "destructive" });
+      return;
+    }
+    setEmailUpdating(true);
+    const { error } = await supabase.auth.updateUser({ email });
+    setEmailUpdating(false);
+    if (error) {
+      toast({ title: "Email update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Confirmation sent",
+      description: "Check your new inbox to confirm the change.",
+    });
+    setNewEmail("");
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (newPassword.length < 8) {
+      toast({ title: "Password too short", description: "Use at least 8 characters.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
+    setPasswordUpdating(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordUpdating(false);
+    if (error) {
+      toast({ title: "Password update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Password updated", description: "Your password has been changed." });
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    const { error } = await supabase.functions.invoke("delete-account");
+    if (error) {
+      setDeleting(false);
+      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    await supabase.auth.signOut();
+    toast({ title: "Account deleted", description: "Your account has been permanently removed." });
+    navigate("/");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
