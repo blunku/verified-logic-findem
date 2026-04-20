@@ -81,6 +81,14 @@ const Profile = () => {
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
 
+  // Settings tab state
+  const [newEmail, setNewEmail] = useState("");
+  const [emailUpdating, setEmailUpdating] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession();
