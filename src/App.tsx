@@ -9,6 +9,7 @@ import CompanyDashboard from "./pages/CompanyDashboard";
 import Auth from "./pages/Auth";
 import Report from "./pages/Report";
 import Jobs from "./pages/Jobs";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/report" element={<Report />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
