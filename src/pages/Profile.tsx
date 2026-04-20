@@ -22,7 +22,23 @@ import {
   Plus,
   ArrowRight,
   Loader2,
+  Mail,
+  KeyRound,
+  Trash2,
+  LogOut,
+  AlertTriangle,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Candidate = {
   id: string;
