@@ -66,6 +66,7 @@ export type Database = {
       }
       candidates: {
         Row: {
+          about: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
@@ -73,13 +74,17 @@ export type Database = {
           github_url: string | null
           github_username: string | null
           id: string
+          linkedin_url: string | null
           location: string | null
+          skills: string[] | null
           status: string
           title: string | null
           updated_at: string
           user_id: string
+          years_experience: number | null
         }
         Insert: {
+          about?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -87,13 +92,17 @@ export type Database = {
           github_url?: string | null
           github_username?: string | null
           id?: string
+          linkedin_url?: string | null
           location?: string | null
+          skills?: string[] | null
           status?: string
           title?: string | null
           updated_at?: string
           user_id: string
+          years_experience?: number | null
         }
         Update: {
+          about?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -101,11 +110,14 @@ export type Database = {
           github_url?: string | null
           github_username?: string | null
           id?: string
+          linkedin_url?: string | null
           location?: string | null
+          skills?: string[] | null
           status?: string
           title?: string | null
           updated_at?: string
           user_id?: string
+          years_experience?: number | null
         }
         Relationships: []
       }

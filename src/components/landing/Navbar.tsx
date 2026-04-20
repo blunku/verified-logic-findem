@@ -9,6 +9,7 @@ const navItems = [
   { to: "/jobs", label: "Jobs" },
   { to: "/candidate", label: "Candidates" },
   { to: "/company", label: "Companies" },
+  { to: "/profile", label: "Profile" },
 ];
 
 const Navbar = () => {
