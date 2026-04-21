@@ -655,9 +655,4 @@ const Report = () => {
   );
 };
 
-/* Inline icon shim — Code2Sparkle (uses Sparkles for clean code badge) */
-function Code2Sparkle(props: React.ComponentProps<typeof Sparkles>) {
-  return <Sparkles {...props} />;
-}
-
 export default Report;
