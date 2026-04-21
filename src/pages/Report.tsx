@@ -30,6 +30,7 @@ import {
   ArrowLeft,
   Loader2,
   BadgeCheck,
+  Code2,
 } from "lucide-react";
 import { toast } from "sonner";
 
