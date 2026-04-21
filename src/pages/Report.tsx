@@ -226,7 +226,7 @@ const Report = () => {
   // Skill DNA badges
   const dnaBadges: { label: string; icon: typeof Award }[] = [];
   if (logic > 85) dnaBadges.push({ label: "Algorithm Expert", icon: Cpu });
-  if (quality > 85) dnaBadges.push({ label: "Clean Code Master", icon: Code2Sparkle });
+  if (quality > 85) dnaBadges.push({ label: "Clean Code Master", icon: Code2 });
   if (problem > 85) dnaBadges.push({ label: "System Architect", icon: GitBranch });
   if (overall > 90) dnaBadges.push({ label: "Top 1% Engineer", icon: Award });
   if (dnaBadges.length === 0) dnaBadges.push({ label: "Verified Developer", icon: BadgeCheck });
