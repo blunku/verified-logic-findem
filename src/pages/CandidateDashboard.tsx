@@ -341,6 +341,87 @@ const CandidateDashboard = () => {
               </div>
             )}
           </div>
+
+          {auditComplete && (() => {
+            const score = audit.overall_score ?? 0;
+            const tier =
+              score >= 90 ? { range: "$120,000 – $180,000", low: 120, high: 180, mid: 150, label: "Elite" }
+              : score >= 80 ? { range: "$90,000 – $130,000", low: 90, high: 130, mid: 110, label: "Senior" }
+              : score >= 70 ? { range: "$70,000 – $100,000", low: 70, high: 100, mid: 85, label: "Mid-Senior" }
+              : score >= 60 ? { range: "$50,000 – $75,000", low: 50, high: 75, mid: 62, label: "Mid-Level" }
+              : { range: "$40,000 – $60,000", low: 40, high: 60, mid: 50, label: "Entry" };
+
+            const MAX = 180;
+            const bars = [
+              { name: "Your Value", value: tier.mid, display: tier.range, accent: "from-primary to-primary/40", highlight: true },
+              { name: "Market Average", value: 85, display: "$85,000", accent: "from-muted-foreground/60 to-muted-foreground/20" },
+              { name: "Top 10% Earners", value: 160, display: "$160,000", accent: "from-amber-400 to-amber-600/40" },
+            ];
+
+            return (
+              <div className="surface-elevated relative overflow-hidden p-6 mb-8 border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
+                <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+                <div className="relative">
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-primary/40 flex items-center justify-center shadow-[0_0_24px_hsl(var(--primary)/0.4)]">
+                        <TrendingUp className="h-5 w-5 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Salary Insights</div>
+                        <h3 className="text-xl font-semibold">Your Market Value</h3>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+                      {tier.label} Tier
+                    </Badge>
+                  </div>
+
+                  <div className="rounded-2xl border border-primary/20 bg-background/60 p-5 mb-6">
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Estimated Salary Range</div>
+                    <div className="mt-1 text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
+                      {tier.range}
+                      <span className="text-base font-normal text-muted-foreground">/year</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 mb-6">
+                    {bars.map((b) => (
+                      <div key={b.name}>
+                        <div className="flex items-center justify-between mb-1.5 text-sm">
+                          <span className={`font-medium ${b.highlight ? "text-foreground" : "text-muted-foreground"}`}>
+                            {b.name}
+                            {b.highlight && (
+                              <Badge className="ml-2 bg-primary/15 text-primary border border-primary/30 text-[10px]">YOU</Badge>
+                            )}
+                          </span>
+                          <span className="font-mono text-xs text-muted-foreground">{b.display}</span>
+                        </div>
+                        <div className="h-3 w-full rounded-full bg-muted/40 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${b.accent} ${b.highlight ? "shadow-[0_0_16px_hsl(var(--primary)/0.5)]" : ""}`}
+                            style={{ width: `${Math.min(100, (b.value / MAX) * 100)}%`, transition: "width 700ms ease-out" }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      Based on 10,000+ verified developer salaries on Findem
+                    </p>
+                    <Button asChild variant="hero">
+                      <Link to="/jobs">
+                        <Briefcase className="h-4 w-4" /> See Jobs Matching Your Value
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </main>
     </div>
