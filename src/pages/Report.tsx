@@ -217,8 +217,26 @@ const Report = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-7 h-7 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading your audit report…</p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+          <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-foreground mb-1">Unable to load report</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {error || "No audit data available."}
+          </p>
+          <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+            Try again
+          </Button>
+        </div>
       </div>
     );
   }
