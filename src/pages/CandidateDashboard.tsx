@@ -230,20 +230,27 @@ const CandidateDashboard = () => {
                   Solve a real coding challenge while our AI analyzes your thinking process.
                 </p>
               </div>
-              <Button
-                variant={auditComplete && !auditRunning ? "default" : "hero"}
-                onClick={handleStartAudit}
-                disabled={!githubSaved || auditRunning}
-                className={auditComplete && !auditRunning ? "bg-success text-success-foreground hover:bg-success/90 shadow-[0_0_24px_hsl(var(--success)/0.25)]" : undefined}
-              >
-                {auditRunning ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
-                ) : auditComplete ? (
-                  <><CheckCircle className="w-4 h-4" /> Audit Complete ✓</>
-                ) : (
-                  <><Play className="w-4 h-4" /> Start Audit</>
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline">
+                  <Link to="/challenge">
+                    <Play className="w-4 h-4" /> Take Challenge
+                  </Link>
+                </Button>
+                <Button
+                  variant={auditComplete && !auditRunning ? "default" : "hero"}
+                  onClick={handleStartAudit}
+                  disabled={!githubSaved || auditRunning}
+                  className={auditComplete && !auditRunning ? "bg-success text-success-foreground hover:bg-success/90 shadow-[0_0_24px_hsl(var(--success)/0.25)]" : undefined}
+                >
+                  {auditRunning ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Audit Running...</>
+                  ) : auditComplete ? (
+                    <><CheckCircle className="w-4 h-4" /> Audit Complete ✓</>
+                  ) : (
+                    <><Play className="w-4 h-4" /> Start Audit</>
+                  )}
+                </Button>
+              </div>
             </div>
 
             {!githubSaved && (
