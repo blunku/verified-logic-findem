@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/landing/Navbar";
-import { Github, Play, CheckCircle, Brain, Code2, Bug, Lightbulb, Loader2, ArrowRight, RotateCcw } from "lucide-react";
+import { Github, Play, CheckCircle, Brain, Code2, Bug, Lightbulb, Loader2, ArrowRight, RotateCcw, TrendingUp, Briefcase } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
