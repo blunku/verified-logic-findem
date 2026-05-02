@@ -164,18 +164,31 @@ const proficiencyColor: Record<Proficiency, string> = {
 const Report = () => {
   const [data, setData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const res = await fetch(WEBHOOK_URL);
-        const raw = await res.json();
-        const parsed = Array.isArray(raw) ? raw[0] : raw;
-        if (active) setData(parsed ?? {});
+        const response = await fetch(WEBHOOK_URL);
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Non-JSON response from webhook:", text.slice(0, 200));
+          throw new Error("Audit endpoint did not return JSON. The workflow may be offline.");
+        }
+        const data = await response.json();
+        const audit = Array.isArray(data) ? data[0] : data;
+        if (!audit || typeof audit !== "object") {
+          throw new Error("No audit data available.");
+        }
+        if (active) setData(audit);
       } catch (e) {
-        console.error(e);
-        if (active) setData({});
+        console.error("Failed to fetch audit results:", e);
+        if (active) setError(e instanceof Error ? e.message : "Failed to load report data.");
       } finally {
         if (active) setLoading(false);
       }
