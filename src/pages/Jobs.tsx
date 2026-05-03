@@ -331,6 +331,7 @@ const Jobs = () => {
 };
 
 const JobCard = ({ job, isVerified }: { job: Job; isVerified: boolean }) => {
+  const trust = COMPANY_TRUST[job.company] ?? 8.5;
   return (
     <Card className="group relative overflow-hidden surface-card hover:border-primary/40 transition-all duration-300 hover:shadow-glow">
       <div className="absolute top-0 right-0 px-3 py-1 rounded-bl-lg bg-gradient-to-l from-primary/20 to-primary/5 border-l border-b border-primary/20">
@@ -345,9 +346,13 @@ const JobCard = ({ job, isVerified }: { job: Job; isVerified: boolean }) => {
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground shrink-0">
             <Building2 className="h-5 w-5" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="font-bold text-foreground leading-tight">{job.title}</h3>
             <p className="text-sm text-muted-foreground truncate">{job.company}</p>
+          </div>
+          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shrink-0">
+            <ShieldCheck className="h-3 w-3" />
+            {trust.toFixed(1)}
           </div>
         </div>
 
