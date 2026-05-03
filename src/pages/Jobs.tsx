@@ -121,6 +121,16 @@ const SAMPLE_JOBS: Job[] = [
   },
 ];
 
+const COMPANY_TRUST: Record<string, number> = {
+  Vercel: 9.2,
+  Anthropic: 9.8,
+  Linear: 8.9,
+  Stripe: 9.5,
+  Notion: 8.7,
+  Cloudflare: 9.0,
+  OpenAI: 9.6,
+};
+
 const ROLES = ["All", "Engineering", "AI/ML", "Data", "Infrastructure"];
 
 const Jobs = () => {
