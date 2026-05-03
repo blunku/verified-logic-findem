@@ -12,6 +12,7 @@ import Jobs from "./pages/Jobs";
 import Profile from "./pages/Profile";
 import Onboarding from "./pages/Onboarding";
 import Challenge from "./pages/Challenge";
+import Referrals from "./pages/Referrals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
