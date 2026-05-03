@@ -2,8 +2,15 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldCheck, LogOut, User } from "lucide-react";
+import { ShieldCheck, LogOut, User, ChevronDown, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { to: "/jobs", label: "Jobs" },
@@ -81,25 +88,40 @@ const Navbar = () => {
           })}
           {authed ? (
             <>
-              <Link
-                to="/profile"
-                className={cn(
-                  "ml-2 flex items-center gap-2 px-2.5 h-8 rounded-md border border-border/60 bg-card/40 hover:bg-primary/10 hover:border-primary/40 transition-colors",
-                  profileActive && "border-primary/50 bg-primary/10"
-                )}
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 text-[10px] font-bold text-primary-foreground">
-                  {(displayName || "U").charAt(0).toUpperCase()}
-                </span>
-                <span className="text-xs font-medium text-foreground max-w-[100px] truncate">
-                  {displayName || "Profile"}
-                </span>
-                <User className="h-3 w-3 text-muted-foreground" />
-              </Link>
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="ml-1">
-                <LogOut className="h-3.5 w-3.5" />
-                Sign Out
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "ml-2 flex items-center gap-2 px-2.5 h-8 rounded-md border border-border/60 bg-card/40 hover:bg-primary/10 hover:border-primary/40 transition-colors",
+                      profileActive && "border-primary/50 bg-primary/10"
+                    )}
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 text-[10px] font-bold text-primary-foreground">
+                      {(displayName || "U").charAt(0).toUpperCase()}
+                    </span>
+                    <span className="text-xs font-medium text-foreground max-w-[100px] truncate">
+                      {displayName || "Profile"}
+                    </span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="h-4 w-4 mr-2" /> Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/referrals" className="cursor-pointer">
+                      <DollarSign className="h-4 w-4 mr-2" /> Referrals
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <Button variant="default" size="sm" asChild className="ml-2">
