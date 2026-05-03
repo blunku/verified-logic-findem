@@ -190,6 +190,29 @@ const Jobs = () => {
             Curated roles from companies hiring verified engineers.
           </p>
 
+          {/* Company Reviews banner */}
+          <Link
+            to="/companies"
+            className="mt-5 group flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card/40 hover:bg-card/60 hover:border-primary/40 transition-colors p-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  Company Reviews & Trust Scores
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Read real reviews from hired candidates before you apply.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-medium text-primary flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              Explore companies <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+
           <div className="mt-6 flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
