@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Onboarding from "./pages/Onboarding";
 import Challenge from "./pages/Challenge";
 import Referrals from "./pages/Referrals";
+import Companies from "./pages/Companies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/challenge" element={<Challenge />} />
           <Route path="/referrals" element={<Referrals />} />
+          <Route path="/companies" element={<Companies />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
