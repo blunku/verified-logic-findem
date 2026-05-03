@@ -33,6 +33,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/challenge" element={<Challenge />} />
+          <Route path="/referrals" element={<Referrals />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
