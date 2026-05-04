@@ -230,7 +230,12 @@ const CandidateDashboard = () => {
                   Solve a real coding challenge while our AI analyzes your thinking process.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button asChild variant="outline">
+                  <Link to="/interview-prep">
+                    <Brain className="w-4 h-4" /> Interview Prep
+                  </Link>
+                </Button>
                 <Button asChild variant="outline">
                   <Link to="/challenge">
                     <Play className="w-4 h-4" /> Take Challenge
