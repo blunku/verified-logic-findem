@@ -171,6 +171,18 @@ const Report = () => {
     let active = true;
     (async () => {
       try {
+        // Fetch candidate profile from Supabase
+        let profile: { full_name?: string; github_username?: string; title?: string } = {};
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: candidate } = await supabase
+            .from("candidates")
+            .select("full_name, github_username, title")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (candidate) profile = candidate;
+        }
+
         const response = await fetch(WEBHOOK_URL);
         if (!response.ok) {
           throw new Error(`Request failed with status ${response.status}`);
@@ -181,12 +193,19 @@ const Report = () => {
           console.error("Non-JSON response from webhook:", text.slice(0, 200));
           throw new Error("Audit endpoint did not return JSON. The workflow may be offline.");
         }
-        const data = await response.json();
-        const audit = Array.isArray(data) ? data[0] : data;
+        const json = await response.json();
+        const audit = Array.isArray(json) ? json[0] : json;
         if (!audit || typeof audit !== "object") {
           throw new Error("No audit data available.");
         }
-        if (active) setData(audit);
+        // Merge: prefer real candidate profile values
+        const merged = {
+          ...audit,
+          full_name: profile.full_name || audit.full_name,
+          github_username: profile.github_username || audit.github_username,
+          title: profile.title || audit.title,
+        };
+        if (active) setData(merged);
       } catch (e) {
         console.error("Failed to fetch audit results:", e);
         if (active) setError(e instanceof Error ? e.message : "Failed to load report data.");
@@ -199,7 +218,10 @@ const Report = () => {
     };
   }, []);
 
-  const handleDownload = () => window.print();
+  const handleDownload = () => {
+    toast.info("Opening print dialog — choose 'Save as PDF'");
+    setTimeout(() => window.print(), 300);
+  };
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
