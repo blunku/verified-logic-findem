@@ -33,6 +33,7 @@ import {
   Code2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const WEBHOOK_URL = "https://maliksakib.app.n8n.cloud/webhook/get-audit-results";
 
