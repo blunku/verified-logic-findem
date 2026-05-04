@@ -133,3 +133,17 @@
   0%, 100% { box-shadow: 0 0 20px hsl(217 91% 60% / 0.1); }
   50% { box-shadow: 0 0 30px hsl(217 91% 60% / 0.25); }
 }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print\:hidden { display: none !important; }
+  nav, header.sticky, footer { display: none !important; }
+  * { box-shadow: none !important; text-shadow: none !important; }
+  .blur-\[140px\], [class*="blur-"] { display: none !important; }
+}
