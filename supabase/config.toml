@@ -1,1 +1,4 @@
 project_id = "sxqlyyiilscgexnndlva"
+
+[functions.interview-feedback]
+verify_jwt = false
