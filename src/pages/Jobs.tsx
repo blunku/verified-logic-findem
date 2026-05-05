@@ -159,6 +159,28 @@ const Jobs = () => {
       <Navbar />
 
       <main className="pt-20 pb-20 max-w-7xl mx-auto px-6">
+        {/* Early Access banner */}
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                Early Access — Real jobs coming soon.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Get verified now to be first in line.
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="border-amber-500/40 text-amber-400 hover:bg-amber-500/10">
+            <Link to="/candidate">
+              Get Verified <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+
         {/* Top verification banner */}
         <div className="mb-8 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -361,6 +383,11 @@ const JobCard = ({ job, isVerified }: { job: Job; isVerified: boolean }) => {
         <span className="text-xs font-semibold text-primary flex items-center gap-1">
           <Sparkles className="h-3 w-3" />
           ${job.bonus.toLocaleString()} bonus
+        </span>
+      </div>
+      <div className="absolute top-0 left-0 px-2 py-1 rounded-br-lg bg-amber-500/15 border-r border-b border-amber-500/30">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+          Sample Role
         </span>
       </div>
 
