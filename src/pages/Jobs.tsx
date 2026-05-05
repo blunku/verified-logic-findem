@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/landing/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -24,111 +26,22 @@ import {
   Building2,
   DollarSign,
   Filter,
+  Plus,
+  Loader2,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type Job = {
   id: string;
-  title: string;
-  company: string;
-  role: string;
-  minRate: number;
-  maxRate: number;
-  hiredThisMonth: number;
-  minScore: number;
-  bonus: number;
-  remote: boolean;
-  location: string;
-};
-
-const SAMPLE_JOBS: Job[] = [
-  {
-    id: "1",
-    title: "Software Engineer",
-    company: "Vercel",
-    role: "Engineering",
-    minRate: 40,
-    maxRate: 80,
-    hiredThisMonth: 12,
-    minScore: 70,
-    bonus: 2000,
-    remote: true,
-    location: "Remote",
-  },
-  {
-    id: "2",
-    title: "AI Training Expert",
-    company: "Anthropic",
-    role: "AI/ML",
-    minRate: 80,
-    maxRate: 120,
-    hiredThisMonth: 8,
-    minScore: 85,
-    bonus: 5000,
-    remote: true,
-    location: "Remote",
-  },
-  {
-    id: "3",
-    title: "Full Stack Developer",
-    company: "Linear",
-    role: "Engineering",
-    minRate: 60,
-    maxRate: 100,
-    hiredThisMonth: 15,
-    minScore: 75,
-    bonus: 3000,
-    remote: true,
-    location: "Remote",
-  },
-  {
-    id: "4",
-    title: "Data Scientist",
-    company: "Stripe",
-    role: "Data",
-    minRate: 70,
-    maxRate: 110,
-    hiredThisMonth: 6,
-    minScore: 80,
-    bonus: 4000,
-    remote: false,
-    location: "San Francisco",
-  },
-  {
-    id: "5",
-    title: "DevOps Engineer",
-    company: "Cloudflare",
-    role: "Infrastructure",
-    minRate: 55,
-    maxRate: 95,
-    hiredThisMonth: 9,
-    minScore: 72,
-    bonus: 2500,
-    remote: true,
-    location: "Remote",
-  },
-  {
-    id: "6",
-    title: "ML Engineer",
-    company: "OpenAI",
-    role: "AI/ML",
-    minRate: 90,
-    maxRate: 150,
-    hiredThisMonth: 4,
-    minScore: 88,
-    bonus: 7500,
-    remote: false,
-    location: "New York",
-  },
-];
-
-const COMPANY_TRUST: Record<string, number> = {
-  Vercel: 9.2,
-  Anthropic: 9.8,
-  Linear: 8.9,
-  Stripe: 9.5,
-  Notion: 8.7,
-  Cloudflare: 9.0,
-  OpenAI: 9.6,
+  company_name: string | null;
+  job_title: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  min_findem_score: number | null;
+  description: string | null;
+  apply_url: string | null;
+  created_at: string;
 };
 
 const ROLES = ["All", "Engineering", "AI/ML", "Data", "Infrastructure"];
@@ -137,22 +50,46 @@ const Jobs = () => {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("All");
   const [minScore, setMinScore] = useState([0]);
-  const [salaryRange, setSalaryRange] = useState([0, 200]);
-  const [remoteOnly, setRemoteOnly] = useState(false);
+  const [salaryRange, setSalaryRange] = useState([0, 500]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCompany, setIsCompany] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
-  // Mock: in a real app this would come from auth/audit state
-  const isVerified = false;
+  useEffect(() => {
+    loadJobs();
+    checkCompany();
+  }, []);
+
+  const checkCompany = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from("companies").select("id").eq("user_id", user.id).maybeSingle();
+    setIsCompany(!!data);
+  };
+
+  const loadJobs = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+    if (error) toast.error("Failed to load jobs");
+    setJobs(data || []);
+    setLoading(false);
+  };
 
   const filtered = useMemo(() => {
-    return SAMPLE_JOBS.filter((j) => {
-      if (search && !j.title.toLowerCase().includes(search.toLowerCase()) && !j.company.toLowerCase().includes(search.toLowerCase())) return false;
-      if (role !== "All" && j.role !== role) return false;
-      if (j.minScore < minScore[0]) return false;
-      if (j.maxRate < salaryRange[0] || j.minRate > salaryRange[1]) return false;
-      if (remoteOnly && !j.remote) return false;
+    return jobs.filter((j) => {
+      const t = (j.job_title || "").toLowerCase();
+      const c = (j.company_name || "").toLowerCase();
+      if (search && !t.includes(search.toLowerCase()) && !c.includes(search.toLowerCase())) return false;
+      if ((j.min_findem_score ?? 0) < minScore[0]) return false;
+      if ((j.salary_max ?? 0) < salaryRange[0] * 1000 || (j.salary_min ?? 0) > salaryRange[1] * 1000) return false;
       return true;
     });
-  }, [search, role, minScore, salaryRange, remoteOnly]);
+  }, [jobs, search, minScore, salaryRange]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -167,7 +104,7 @@ const Jobs = () => {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">
-                Early Access — Real jobs coming soon.
+                Early Access — Real jobs are rolling in.
               </p>
               <p className="text-xs text-muted-foreground">
                 Get verified now to be first in line.
@@ -181,27 +118,24 @@ const Jobs = () => {
           </Button>
         </div>
 
-        {/* Top verification banner */}
-        <div className="mb-8 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                Get verified first to unlock all opportunities
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Verified candidates apply with one click and skip the screening queue.
-              </p>
-            </div>
+        {/* Company submit form */}
+        {isCompany && (
+          <div className="mb-6">
+            {!showForm ? (
+              <Button onClick={() => setShowForm(true)} variant="hero">
+                <Plus className="h-4 w-4" /> Submit a Job
+              </Button>
+            ) : (
+              <SubmitJobForm
+                onCancel={() => setShowForm(false)}
+                onSubmitted={() => {
+                  setShowForm(false);
+                  loadJobs();
+                }}
+              />
+            )}
           </div>
-          <Button asChild variant="hero" size="sm">
-            <Link to="/candidate">
-              Start Audit <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        </div>
+        )}
 
         {/* Header */}
         <div className="mb-8">
@@ -211,29 +145,6 @@ const Jobs = () => {
           <p className="mt-2 text-muted-foreground">
             Curated roles from companies hiring verified engineers.
           </p>
-
-          {/* Company Reviews banner */}
-          <Link
-            to="/companies"
-            className="mt-5 group flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card/40 hover:bg-card/60 hover:border-primary/40 transition-colors p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  Company Reviews & Trust Scores
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Read real reviews from hired candidates before you apply.
-                </p>
-              </div>
-            </div>
-            <span className="text-xs font-medium text-primary flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-              Explore companies <ArrowRight className="h-3.5 w-3.5" />
-            </span>
-          </Link>
 
           <div className="mt-6 flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
@@ -255,27 +166,11 @@ const Jobs = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select defaultValue="any">
-              <SelectTrigger className="h-11 md:w-44 bg-card">
-                <SelectValue placeholder="Salary" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any salary</SelectItem>
-                <SelectItem value="50">$50+/hr</SelectItem>
-                <SelectItem value="80">$80+/hr</SelectItem>
-                <SelectItem value="120">$120+/hr</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2 px-4 h-11 rounded-md border border-input bg-card">
-              <span className="text-sm text-muted-foreground">Remote</span>
-              <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
-            </div>
           </div>
         </div>
 
         {/* Layout: sidebar + grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
-          {/* Sidebar filters */}
           <aside className="space-y-6">
             <Card className="surface-card">
               <CardContent className="p-5 space-y-6">
@@ -285,86 +180,53 @@ const Jobs = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Role type
-                  </label>
-                  <div className="mt-3 space-y-2">
-                    {ROLES.map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setRole(r)}
-                        className={`w-full text-left text-sm px-3 py-1.5 rounded-md transition-colors ${
-                          role === r
-                            ? "bg-primary/15 text-primary font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        }`}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Min Findem Score
                     </label>
                     <span className="text-xs font-mono text-primary">{minScore[0]}</span>
                   </div>
-                  <Slider
-                    value={minScore}
-                    onValueChange={setMinScore}
-                    max={100}
-                    step={5}
-                    className="mt-3"
-                  />
+                  <Slider value={minScore} onValueChange={setMinScore} max={100} step={5} className="mt-3" />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Salary range
+                      Salary range (k)
                     </label>
                     <span className="text-xs font-mono text-primary">
-                      ${salaryRange[0]}-${salaryRange[1]}/hr
+                      ${salaryRange[0]}k-${salaryRange[1]}k
                     </span>
                   </div>
-                  <Slider
-                    value={salaryRange}
-                    onValueChange={setSalaryRange}
-                    max={200}
-                    step={10}
-                    className="mt-3"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <label className="text-sm text-foreground">Remote only</label>
-                  <Switch checked={remoteOnly} onCheckedChange={setRemoteOnly} />
+                  <Slider value={salaryRange} onValueChange={setSalaryRange} max={500} step={10} className="mt-3" />
                 </div>
               </CardContent>
             </Card>
           </aside>
 
-          {/* Job grid */}
           <section>
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing <span className="text-foreground font-medium">{filtered.length}</span> of {SAMPLE_JOBS.length} roles
+                Showing <span className="text-foreground font-medium">{filtered.length}</span> {filtered.length === 1 ? "role" : "roles"}
               </p>
             </div>
 
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filtered.length === 0 ? (
               <Card className="surface-card">
                 <CardContent className="p-12 text-center text-muted-foreground">
-                  No jobs match your filters.
+                  {jobs.length === 0
+                    ? "No jobs posted yet. Companies are joining now — check back soon."
+                    : "No jobs match your filters."}
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {filtered.map((job) => (
-                  <JobCard key={job.id} job={job} isVerified={isVerified} />
+                  <JobCard key={job.id} job={job} />
                 ))}
               </div>
             )}
@@ -375,69 +237,134 @@ const Jobs = () => {
   );
 };
 
-const JobCard = ({ job, isVerified }: { job: Job; isVerified: boolean }) => {
-  const trust = COMPANY_TRUST[job.company] ?? 8.5;
+const SubmitJobForm = ({ onCancel, onSubmitted }: { onCancel: () => void; onSubmitted: () => void }) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    company_name: "",
+    job_title: "",
+    salary_min: "",
+    salary_max: "",
+    min_findem_score: "",
+    description: "",
+    apply_url: "",
+  });
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Not signed in");
+      setSubmitting(false);
+      return;
+    }
+    const { error } = await supabase.from("jobs").insert({
+      user_id: user.id,
+      company_name: form.company_name.trim(),
+      job_title: form.job_title.trim(),
+      salary_min: form.salary_min ? parseInt(form.salary_min) : null,
+      salary_max: form.salary_max ? parseInt(form.salary_max) : null,
+      min_findem_score: form.min_findem_score ? parseInt(form.min_findem_score) : null,
+      description: form.description.trim(),
+      apply_url: form.apply_url.trim(),
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Job posted!");
+    onSubmitted();
+  };
+
+  return (
+    <Card className="surface-card border-primary/30">
+      <CardContent className="p-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">Post a Job</h2>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Company name</Label>
+              <Input required value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} maxLength={100} />
+            </div>
+            <div>
+              <Label>Job title</Label>
+              <Input required value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} maxLength={150} />
+            </div>
+            <div>
+              <Label>Salary min ($/yr)</Label>
+              <Input type="number" min={0} value={form.salary_min} onChange={(e) => setForm({ ...form, salary_min: e.target.value })} />
+            </div>
+            <div>
+              <Label>Salary max ($/yr)</Label>
+              <Input type="number" min={0} value={form.salary_max} onChange={(e) => setForm({ ...form, salary_max: e.target.value })} />
+            </div>
+            <div>
+              <Label>Required Findem score (min)</Label>
+              <Input type="number" min={0} max={100} value={form.min_findem_score} onChange={(e) => setForm({ ...form, min_findem_score: e.target.value })} />
+            </div>
+            <div>
+              <Label>Apply link (URL)</Label>
+              <Input type="url" required value={form.apply_url} onChange={(e) => setForm({ ...form, apply_url: e.target.value })} placeholder="https://..." />
+            </div>
+          </div>
+          <div>
+            <Label>Job description</Label>
+            <Textarea required rows={5} maxLength={3000} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          </div>
+          <div className="flex gap-3">
+            <Button type="submit" variant="hero" disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post Job"}
+            </Button>
+            <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+const JobCard = ({ job }: { job: Job }) => {
+  const fmt = (n: number | null) => (n ? `$${(n / 1000).toFixed(0)}k` : "—");
   return (
     <Card className="group relative overflow-hidden surface-card hover:border-primary/40 transition-all duration-300 hover:shadow-glow">
-      <div className="absolute top-0 right-0 px-3 py-1 rounded-bl-lg bg-gradient-to-l from-primary/20 to-primary/5 border-l border-b border-primary/20">
-        <span className="text-xs font-semibold text-primary flex items-center gap-1">
-          <Sparkles className="h-3 w-3" />
-          ${job.bonus.toLocaleString()} bonus
-        </span>
-      </div>
-      <div className="absolute top-0 left-0 px-2 py-1 rounded-br-lg bg-amber-500/15 border-r border-b border-amber-500/30">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-          Sample Role
-        </span>
-      </div>
-
-      <CardContent className="p-6 pt-7 space-y-4">
+      <CardContent className="p-6 space-y-4">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-muted-foreground shrink-0">
             <Building2 className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-foreground leading-tight">{job.title}</h3>
-            <p className="text-sm text-muted-foreground truncate">{job.company}</p>
-          </div>
-          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shrink-0">
-            <ShieldCheck className="h-3 w-3" />
-            {trust.toFixed(1)}
+            <h3 className="font-bold text-foreground leading-tight">{job.job_title}</h3>
+            <p className="text-sm text-muted-foreground truncate">{job.company_name}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-sm">
-          <DollarSign className="h-4 w-4 text-success" />
-          <span className="font-mono font-semibold text-foreground">
-            ${job.minRate}-${job.maxRate}
-          </span>
-          <span className="text-muted-foreground">/hour</span>
-        </div>
+        {(job.salary_min || job.salary_max) && (
+          <div className="flex items-center gap-2 text-sm">
+            <DollarSign className="h-4 w-4 text-success" />
+            <span className="font-mono font-semibold text-foreground">
+              {fmt(job.salary_min)}–{fmt(job.salary_max)}
+            </span>
+            <span className="text-muted-foreground">/year</span>
+          </div>
+        )}
 
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            {job.location}
-          </span>
-          <span className="flex items-center gap-1">
-            <TrendingUp className="h-3 w-3 text-success" />
-            {job.hiredThisMonth} hired this month
-          </span>
-        </div>
+        {job.description && (
+          <p className="text-sm text-muted-foreground line-clamp-3">{job.description}</p>
+        )}
 
         <div className="flex items-center justify-between pt-3 border-t border-border">
-          <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
-            <ShieldCheck className="h-3 w-3 mr-1" />
-            Min Score: {job.minScore}
-          </Badge>
-
-          {isVerified ? (
-            <Button size="sm" variant="default">
-              Apply <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          ) : (
-            <Button size="sm" variant="outline" asChild>
-              <Link to="/candidate">Verify to apply</Link>
+          {job.min_findem_score != null && (
+            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Min Score: {job.min_findem_score}
+            </Badge>
+          )}
+          {job.apply_url && (
+            <Button size="sm" variant="default" asChild>
+              <a href={job.apply_url} target="_blank" rel="noopener noreferrer">
+                Apply <ArrowRight className="h-3.5 w-3.5" />
+              </a>
             </Button>
           )}
         </div>
