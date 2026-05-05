@@ -157,6 +157,51 @@ export type Database = {
         }
         Relationships: []
       }
+      jobs: {
+        Row: {
+          apply_url: string | null
+          company_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          job_title: string | null
+          min_findem_score: number | null
+          salary_max: number | null
+          salary_min: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apply_url?: string | null
+          company_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          min_findem_score?: number | null
+          salary_max?: number | null
+          salary_min?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apply_url?: string | null
+          company_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          job_title?: string | null
+          min_findem_score?: number | null
+          salary_max?: number | null
+          salary_min?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
