@@ -343,6 +343,47 @@ const CandidateDashboard = () => {
                     <RotateCcw className="h-4 w-4" /> Re-run Audit
                   </Button>
                 </div>
+
+                {candidate?.github_username && (() => {
+                  const badgeUrl = `${window.location.origin}/badge/${candidate.github_username}`;
+                  return (
+                    <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-5">
+                      <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+                        <div>
+                          <p className="text-sm font-semibold">Share your verified badge</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Public, mobile-friendly badge with QR to your report.</p>
+                        </div>
+                        <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">PUBLIC</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <code className="text-xs bg-background border border-border px-2 py-1.5 rounded truncate max-w-[260px]">{badgeUrl}</code>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(badgeUrl);
+                            toast.success("Badge URL copied!");
+                          }}
+                        >
+                          Copy Badge URL
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={`/badge/${candidate.github_username}`} target="_blank">View Badge</Link>
+                        </Button>
+                        <Button size="sm" asChild className="bg-[#0A66C2] text-white hover:bg-[#0A66C2]/90">
+                          <a
+                            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(badgeUrl)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Share on LinkedIn
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
               </div>
             )}
           </div>
