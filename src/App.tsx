@@ -15,6 +15,7 @@ import Challenge from "./pages/Challenge";
 import Referrals from "./pages/Referrals";
 import Companies from "./pages/Companies";
 import InterviewPrep from "./pages/InterviewPrep";
+import Badge from "./pages/Badge";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/interview-prep" element={<ProtectedRoute><InterviewPrep /></ProtectedRoute>} />
+          <Route path="/badge/:username" element={<Badge />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
