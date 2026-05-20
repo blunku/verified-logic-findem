@@ -162,6 +162,28 @@ const Profile = () => {
 
   const removeSkill = (s: string) => setSkills(skills.filter((x) => x !== s));
 
+  const handleToggleOpen = async (checked: boolean) => {
+    if (!candidate) return;
+    setOpenToOpportunities(checked);
+    setTogglingOpen(true);
+    const { error } = await supabase
+      .from("candidates")
+      .update({ is_open_to_opportunities: checked })
+      .eq("user_id", candidate.user_id);
+    setTogglingOpen(false);
+    if (error) {
+      setOpenToOpportunities(!checked);
+      toast({ title: "Could not update availability", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: checked ? "You're visible to companies" : "Visibility paused",
+      description: checked
+        ? "You'll appear with an Available badge in company searches."
+        : "You won't appear in the available candidates filter.",
+    });
+  };
+
   const handleSave = async () => {
     if (!candidate) return;
     setSaving(true);
