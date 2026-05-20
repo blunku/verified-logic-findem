@@ -117,12 +117,80 @@ const PostJobDialog = ({ onPosted }: { onPosted: () => void }) => {
   );
 };
 
+const ContactDialog = ({ expert, companyName }: { expert: VerifiedExpert; companyName: string }) => {
+  const [open, setOpen] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    setSending(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: "Sign in required", variant: "destructive" });
+      setSending(false);
+      return;
+    }
+    const { error } = await supabase.from("messages").insert({
+      from_user_id: user.id,
+      from_company: companyName || null,
+      to_candidate_id: expert.id,
+      subject: subject.trim() || null,
+      message: message.trim(),
+    });
+    setSending(false);
+    if (error) {
+      toast({ title: "Could not send", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Message sent", description: `${expert.full_name || "Candidate"} will see it in their notifications.` });
+    setOpen(false);
+    setSubject("");
+    setMessage("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <MessageSquare className="w-4 h-4" /> Contact
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Message {expert.full_name || "candidate"}</DialogTitle>
+          <DialogDescription>They'll see this in their notifications bell.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={send} className="space-y-3">
+          <div>
+            <Label>Subject</Label>
+            <Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} placeholder="Interested in chatting about an opportunity" />
+          </div>
+          <div>
+            <Label>Message</Label>
+            <Textarea required rows={5} maxLength={2000} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi! We loved your profile..." />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={sending}>
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4" /> Send</>}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const CompanyDashboard = () => {
   const [search, setSearch] = useState("");
   const [experts, setExperts] = useState<VerifiedExpert[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [invited, setInvited] = useState<Set<string>>(new Set());
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [companyName, setCompanyName] = useState("");
 
   const fetchJobs = async () => {
     const { data: { user } } = await supabase.auth.getUser();
