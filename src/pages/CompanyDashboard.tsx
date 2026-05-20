@@ -405,11 +405,16 @@ const CompanyDashboard = () => {
                         {expert.full_name?.split(" ").map(n => n[0]).join("") || "?"}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold truncate">{expert.full_name || "Unknown"}</span>
                           <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 shrink-0">
                             Verified
                           </Badge>
+                          {expert.is_open_to_opportunities && (
+                            <Badge className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                              Available
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{expert.title || "Engineer"}</p>
                         {expert.location && (
@@ -430,14 +435,12 @@ const CompanyDashboard = () => {
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-4 lg:w-44 shrink-0 justify-end">
+                    <div className="flex items-center gap-2 lg:w-auto shrink-0 justify-end">
                       <div className={`text-center px-4 py-2 rounded-lg border ${getScoreColor(expert.audit?.overall_score)}`}>
                         <div className="text-2xl font-bold font-mono">{expert.audit?.overall_score ?? "—"}</div>
                         <div className="text-[10px] uppercase tracking-wider opacity-80">Overall</div>
                       </div>
-                      <Button size="sm" variant="outline" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link to="/report">View Profile</Link>
-                      </Button>
+                      <ContactDialog expert={expert} companyName={companyName} />
                     </div>
                   </div>
 
