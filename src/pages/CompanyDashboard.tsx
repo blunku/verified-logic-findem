@@ -20,6 +20,7 @@ interface VerifiedExpert {
   github_username: string | null;
   avatar_url: string | null;
   email: string | null;
+  is_open_to_opportunities: boolean | null;
   audit: {
     overall_score: number | null;
     logic_score: number | null;
