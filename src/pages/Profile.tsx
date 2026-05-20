@@ -345,6 +345,30 @@ const Profile = () => {
 
           {/* PROFILE TAB */}
           <TabsContent value="profile" className="mt-6 space-y-6">
+            <Card className="surface-card border-primary/20">
+              <CardContent className="p-6 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-sm font-semibold text-foreground">I'm open to opportunities</h2>
+                    {openToOpportunities && (
+                      <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        Available
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    When on, you appear in company candidate searches with an Available badge and can receive direct messages.
+                  </p>
+                </div>
+                <Switch
+                  checked={openToOpportunities}
+                  disabled={togglingOpen}
+                  onCheckedChange={handleToggleOpen}
+                  aria-label="Toggle open to opportunities"
+                />
+              </CardContent>
+            </Card>
+
             <Card className="surface-card">
               <CardContent className="p-6 space-y-5">
                 <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
