@@ -233,10 +233,21 @@ const CompanyDashboard = () => {
     setExperts(enriched);
   };
 
+  const fetchCompany = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("companies")
+      .select("company_name")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (data?.company_name) setCompanyName(data.company_name);
+  };
+
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await Promise.all([fetchJobs(), fetchExperts()]);
+      await Promise.all([fetchJobs(), fetchExperts(), fetchCompany()]);
       setLoading(false);
     })();
   }, []);
@@ -257,12 +268,16 @@ const CompanyDashboard = () => {
     });
   };
 
-  const filtered = experts.filter(
-    (e) =>
-      (e.full_name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-      (e.title?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-      (e.location?.toLowerCase().includes(search.toLowerCase()) ?? false)
-  );
+  const filtered = experts.filter((e) => {
+    if (onlyAvailable && !e.is_open_to_opportunities) return false;
+    const q = search.toLowerCase();
+    if (!q) return true;
+    return (
+      (e.full_name?.toLowerCase().includes(q) ?? false) ||
+      (e.title?.toLowerCase().includes(q) ?? false) ||
+      (e.location?.toLowerCase().includes(q) ?? false)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-background">
