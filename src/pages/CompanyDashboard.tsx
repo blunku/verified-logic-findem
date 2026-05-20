@@ -139,7 +139,7 @@ const CompanyDashboard = () => {
   const fetchExperts = async () => {
     const { data: candidates } = await supabase
       .from("candidates")
-      .select("id, full_name, title, location, github_username, avatar_url, email")
+      .select("id, full_name, title, location, github_username, avatar_url, email, is_open_to_opportunities")
       .eq("status", "verified");
 
     if (!candidates || candidates.length === 0) {
