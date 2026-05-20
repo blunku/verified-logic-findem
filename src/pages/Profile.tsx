@@ -82,6 +82,8 @@ const Profile = () => {
   const [yearsExperience, setYearsExperience] = useState<string>("");
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
+  const [openToOpportunities, setOpenToOpportunities] = useState(false);
+  const [togglingOpen, setTogglingOpen] = useState(false);
 
   // Settings tab state
   const [newEmail, setNewEmail] = useState("");
