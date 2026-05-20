@@ -324,7 +324,14 @@ const CompanyDashboard = () => {
                         {c.full_name?.split(" ").map((n) => n[0]).join("") || "?"}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold truncate">{c.full_name || "Unknown"}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold truncate">{c.full_name || "Unknown"}</span>
+                          {c.is_open_to_opportunities && (
+                            <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px]">
+                              Available
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground truncate">{c.title || "Engineer"}</div>
                       </div>
                     </div>
@@ -343,6 +350,7 @@ const CompanyDashboard = () => {
                       <Button size="sm" variant="outline" asChild>
                         <Link to="/report"><FileText className="w-4 h-4" /> Report</Link>
                       </Button>
+                      <ContactDialog expert={c} companyName={companyName} />
                       <Button size="sm" disabled={invited.has(c.id)} onClick={() => handleInvite(c)}>
                         <Mail className="w-4 h-4" /> {invited.has(c.id) ? "Invited" : "Invite to Interview"}
                       </Button>
