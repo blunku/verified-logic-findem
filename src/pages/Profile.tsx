@@ -55,6 +55,7 @@ type Candidate = {
   linkedin_url: string | null;
   skills: string[] | null;
   years_experience: number | null;
+  is_open_to_opportunities: boolean | null;
 };
 
 type Audit = {
