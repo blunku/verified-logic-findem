@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import {
   MapPin,
@@ -54,6 +55,7 @@ type Candidate = {
   linkedin_url: string | null;
   skills: string[] | null;
   years_experience: number | null;
+  is_open_to_opportunities: boolean | null;
 };
 
 type Audit = {
@@ -80,6 +82,8 @@ const Profile = () => {
   const [yearsExperience, setYearsExperience] = useState<string>("");
   const [skills, setSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
+  const [openToOpportunities, setOpenToOpportunities] = useState(false);
+  const [togglingOpen, setTogglingOpen] = useState(false);
 
   // Settings tab state
   const [newEmail, setNewEmail] = useState("");
@@ -119,6 +123,7 @@ const Profile = () => {
         setLinkedinUrl(cand.linkedin_url ?? "");
         setYearsExperience(cand.years_experience?.toString() ?? "");
         setSkills(cand.skills ?? []);
+        setOpenToOpportunities(!!cand.is_open_to_opportunities);
 
         const { data: auditRows } = await supabase
           .from("audit_results")
@@ -156,6 +161,28 @@ const Profile = () => {
   };
 
   const removeSkill = (s: string) => setSkills(skills.filter((x) => x !== s));
+
+  const handleToggleOpen = async (checked: boolean) => {
+    if (!candidate) return;
+    setOpenToOpportunities(checked);
+    setTogglingOpen(true);
+    const { error } = await supabase
+      .from("candidates")
+      .update({ is_open_to_opportunities: checked })
+      .eq("user_id", candidate.user_id);
+    setTogglingOpen(false);
+    if (error) {
+      setOpenToOpportunities(!checked);
+      toast({ title: "Could not update availability", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: checked ? "You're visible to companies" : "Visibility paused",
+      description: checked
+        ? "You'll appear with an Available badge in company searches."
+        : "You won't appear in the available candidates filter.",
+    });
+  };
 
   const handleSave = async () => {
     if (!candidate) return;
@@ -318,6 +345,30 @@ const Profile = () => {
 
           {/* PROFILE TAB */}
           <TabsContent value="profile" className="mt-6 space-y-6">
+            <Card className="surface-card border-primary/20">
+              <CardContent className="p-6 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-sm font-semibold text-foreground">I'm open to opportunities</h2>
+                    {openToOpportunities && (
+                      <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        Available
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    When on, you appear in company candidate searches with an Available badge and can receive direct messages.
+                  </p>
+                </div>
+                <Switch
+                  checked={openToOpportunities}
+                  disabled={togglingOpen}
+                  onCheckedChange={handleToggleOpen}
+                  aria-label="Toggle open to opportunities"
+                />
+              </CardContent>
+            </Card>
+
             <Card className="surface-card">
               <CardContent className="p-6 space-y-5">
                 <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">

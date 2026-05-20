@@ -74,6 +74,7 @@ export type Database = {
           github_url: string | null
           github_username: string | null
           id: string
+          is_open_to_opportunities: boolean
           linkedin_url: string | null
           location: string | null
           skills: string[] | null
@@ -92,6 +93,7 @@ export type Database = {
           github_url?: string | null
           github_username?: string | null
           id?: string
+          is_open_to_opportunities?: boolean
           linkedin_url?: string | null
           location?: string | null
           skills?: string[] | null
@@ -110,6 +112,7 @@ export type Database = {
           github_url?: string | null
           github_username?: string | null
           id?: string
+          is_open_to_opportunities?: boolean
           linkedin_url?: string | null
           location?: string | null
           skills?: string[] | null
@@ -201,6 +204,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          created_at: string
+          from_company: string | null
+          from_user_id: string
+          id: string
+          is_read: boolean
+          message: string
+          subject: string | null
+          to_candidate_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_company?: string | null
+          from_user_id: string
+          id?: string
+          is_read?: boolean
+          message: string
+          subject?: string | null
+          to_candidate_id: string
+        }
+        Update: {
+          created_at?: string
+          from_company?: string | null
+          from_user_id?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          subject?: string | null
+          to_candidate_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_to_candidate_id_fkey"
+            columns: ["to_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

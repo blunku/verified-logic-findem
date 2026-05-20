@@ -1,11 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/landing/Navbar";
-import { Code2, Lightbulb, Search, Loader2, MapPin, Users, Plus, Github, FileText, Mail, Briefcase } from "lucide-react";
+import { Code2, Lightbulb, Search, Loader2, MapPin, Users, Plus, Github, FileText, Mail, Briefcase, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,7 @@ interface VerifiedExpert {
   github_username: string | null;
   avatar_url: string | null;
   email: string | null;
+  is_open_to_opportunities: boolean | null;
   audit: {
     overall_score: number | null;
     logic_score: number | null;
@@ -115,12 +117,80 @@ const PostJobDialog = ({ onPosted }: { onPosted: () => void }) => {
   );
 };
 
+const ContactDialog = ({ expert, companyName }: { expert: VerifiedExpert; companyName: string }) => {
+  const [open, setOpen] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    setSending(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: "Sign in required", variant: "destructive" });
+      setSending(false);
+      return;
+    }
+    const { error } = await supabase.from("messages").insert({
+      from_user_id: user.id,
+      from_company: companyName || null,
+      to_candidate_id: expert.id,
+      subject: subject.trim() || null,
+      message: message.trim(),
+    });
+    setSending(false);
+    if (error) {
+      toast({ title: "Could not send", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Message sent", description: `${expert.full_name || "Candidate"} will see it in their notifications.` });
+    setOpen(false);
+    setSubject("");
+    setMessage("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <MessageSquare className="w-4 h-4" /> Contact
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Message {expert.full_name || "candidate"}</DialogTitle>
+          <DialogDescription>They'll see this in their notifications bell.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={send} className="space-y-3">
+          <div>
+            <Label>Subject</Label>
+            <Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} placeholder="Interested in chatting about an opportunity" />
+          </div>
+          <div>
+            <Label>Message</Label>
+            <Textarea required rows={5} maxLength={2000} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi! We loved your profile..." />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={sending}>
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4" /> Send</>}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const CompanyDashboard = () => {
   const [search, setSearch] = useState("");
   const [experts, setExperts] = useState<VerifiedExpert[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [invited, setInvited] = useState<Set<string>>(new Set());
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [companyName, setCompanyName] = useState("");
 
   const fetchJobs = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -137,7 +207,7 @@ const CompanyDashboard = () => {
   const fetchExperts = async () => {
     const { data: candidates } = await supabase
       .from("candidates")
-      .select("id, full_name, title, location, github_username, avatar_url, email")
+      .select("id, full_name, title, location, github_username, avatar_url, email, is_open_to_opportunities")
       .eq("status", "verified");
 
     if (!candidates || candidates.length === 0) {
@@ -163,10 +233,21 @@ const CompanyDashboard = () => {
     setExperts(enriched);
   };
 
+  const fetchCompany = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("companies")
+      .select("company_name")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (data?.company_name) setCompanyName(data.company_name);
+  };
+
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await Promise.all([fetchJobs(), fetchExperts()]);
+      await Promise.all([fetchJobs(), fetchExperts(), fetchCompany()]);
       setLoading(false);
     })();
   }, []);
@@ -187,12 +268,16 @@ const CompanyDashboard = () => {
     });
   };
 
-  const filtered = experts.filter(
-    (e) =>
-      (e.full_name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-      (e.title?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-      (e.location?.toLowerCase().includes(search.toLowerCase()) ?? false)
-  );
+  const filtered = experts.filter((e) => {
+    if (onlyAvailable && !e.is_open_to_opportunities) return false;
+    const q = search.toLowerCase();
+    if (!q) return true;
+    return (
+      (e.full_name?.toLowerCase().includes(q) ?? false) ||
+      (e.title?.toLowerCase().includes(q) ?? false) ||
+      (e.location?.toLowerCase().includes(q) ?? false)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -239,7 +324,14 @@ const CompanyDashboard = () => {
                         {c.full_name?.split(" ").map((n) => n[0]).join("") || "?"}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold truncate">{c.full_name || "Unknown"}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold truncate">{c.full_name || "Unknown"}</span>
+                          {c.is_open_to_opportunities && (
+                            <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px]">
+                              Available
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground truncate">{c.title || "Engineer"}</div>
                       </div>
                     </div>
@@ -258,6 +350,7 @@ const CompanyDashboard = () => {
                       <Button size="sm" variant="outline" asChild>
                         <Link to="/report"><FileText className="w-4 h-4" /> Report</Link>
                       </Button>
+                      <ContactDialog expert={c} companyName={companyName} />
                       <Button size="sm" disabled={invited.has(c.id)} onClick={() => handleInvite(c)}>
                         <Mail className="w-4 h-4" /> {invited.has(c.id) ? "Invited" : "Invite to Interview"}
                       </Button>
@@ -271,14 +364,20 @@ const CompanyDashboard = () => {
           {/* All Verified Experts */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
             <h2 className="text-xl font-semibold">Verified Experts</h2>
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, role, or location..."
-                className="pl-9"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                <Switch checked={onlyAvailable} onCheckedChange={setOnlyAvailable} />
+                Show only available candidates
+              </label>
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, role, or location..."
+                  className="pl-9"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -306,11 +405,16 @@ const CompanyDashboard = () => {
                         {expert.full_name?.split(" ").map(n => n[0]).join("") || "?"}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold truncate">{expert.full_name || "Unknown"}</span>
                           <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 shrink-0">
                             Verified
                           </Badge>
+                          {expert.is_open_to_opportunities && (
+                            <Badge className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                              Available
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{expert.title || "Engineer"}</p>
                         {expert.location && (
@@ -331,14 +435,12 @@ const CompanyDashboard = () => {
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-4 lg:w-44 shrink-0 justify-end">
+                    <div className="flex items-center gap-2 lg:w-auto shrink-0 justify-end">
                       <div className={`text-center px-4 py-2 rounded-lg border ${getScoreColor(expert.audit?.overall_score)}`}>
                         <div className="text-2xl font-bold font-mono">{expert.audit?.overall_score ?? "—"}</div>
                         <div className="text-[10px] uppercase tracking-wider opacity-80">Overall</div>
                       </div>
-                      <Button size="sm" variant="outline" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link to="/report">View Profile</Link>
-                      </Button>
+                      <ContactDialog expert={expert} companyName={companyName} />
                     </div>
                   </div>
 
