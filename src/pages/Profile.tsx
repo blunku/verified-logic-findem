@@ -123,6 +123,7 @@ const Profile = () => {
         setLinkedinUrl(cand.linkedin_url ?? "");
         setYearsExperience(cand.years_experience?.toString() ?? "");
         setSkills(cand.skills ?? []);
+        setOpenToOpportunities(!!cand.is_open_to_opportunities);
 
         const { data: auditRows } = await supabase
           .from("audit_results")
