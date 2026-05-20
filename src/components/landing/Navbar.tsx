@@ -89,6 +89,7 @@ const Navbar = () => {
           })}
           {authed ? (
             <>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
